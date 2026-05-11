@@ -9,6 +9,7 @@ interface User {
   email: string;
   fullName?: string;
   username?: string;
+  usernameUpdatedAt?: string;
   walletAddress?: string;
 }
 
@@ -20,7 +21,7 @@ interface AuthContextType {
   needsUsername: boolean;
   login: (data: { user: User; session: any }) => void;
   logout: () => void;
-  completeUsername: (username: string) => void;
+  completeUsername: (username: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fetch existing profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('wallet_address, full_name, username')
+        .select('wallet_address, full_name, username, username_updated_at')
         .eq('id', verifiedUser.id)
         .maybeSingle();
 
@@ -80,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: verifiedUser.email!,
         fullName: profile?.full_name || verifiedUser.user_metadata?.full_name || verifiedUser.user_metadata?.name,
         username: profile?.username || undefined,
+        usernameUpdatedAt: profile?.username_updated_at || undefined,
         walletAddress: profile?.wallet_address,
       };
 
@@ -218,11 +220,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const completeUsername = (username: string) => {
+  const completeUsername = async (username: string) => {
+    if (!user?.id) throw new Error('Not authenticated');
+
+    // Check if user has updated their username in the last 30 days
+    if (user.usernameUpdatedAt) {
+      const lastUpdate = new Date(user.usernameUpdatedAt);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      if (lastUpdate > thirtyDaysAgo) {
+        const nextUpdate = new Date(lastUpdate);
+        nextUpdate.setDate(nextUpdate.getDate() + 30);
+        throw new Error(`You can only change your username once a month. Next update available on ${nextUpdate.toLocaleDateString()}.`);
+      }
+    }
+
+    const now = new Date().toISOString();
+
+    // Update DB
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        username,
+        username_updated_at: now,
+        updated_at: now
+      })
+      .eq('id', user.id);
+
+    if (error) throw error;
+
+    // Update local state
     setNeedsUsername(false);
     setUser(prev => {
       if (!prev) return null;
-      const updated = { ...prev, username };
+      const updated = { ...prev, username, usernameUpdatedAt: now };
       localStorage.setItem('olos_user', JSON.stringify(updated));
       return updated;
     });
