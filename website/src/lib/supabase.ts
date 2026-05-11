@@ -10,8 +10,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 // - detectSessionInUrl: false -> prevent auth client from parsing URL on load
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 	auth: {
-		autoRefreshToken: false,
+		autoRefreshToken: true,
 		persistSession: true,
-		detectSessionInUrl: false,
+		detectSessionInUrl: true,
 	},
 })
