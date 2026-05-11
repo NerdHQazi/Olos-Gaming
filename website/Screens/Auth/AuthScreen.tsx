@@ -21,7 +21,17 @@ export default function AuthScreen() {
 
   // Read error param set by /auth/callback on OAuth failure
   useEffect(() => {
-    if (searchParams.get('error') === 'oauth_failed') {
+    const errorParam = searchParams.get('error');
+    const hash = window.location.hash;
+    
+    // If we have an access_token in the hash, we are actually successful!
+    // Supabase sometimes sends us to the error page while keeping the token in the fragment.
+    if (hash.includes('access_token=')) {
+      setServerError(null);
+      return;
+    }
+
+    if (errorParam === 'oauth_failed') {
       setServerError('Google sign-in failed. Please try again.');
     }
   }, [searchParams]);
