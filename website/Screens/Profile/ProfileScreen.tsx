@@ -7,7 +7,7 @@ import { useState } from 'react';
 import UsernameModal from '@/components/UsernameModal';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
-import { useAuth } from '@/context/AuthContext';
+
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { useAppKitAccount } from '@reown/appkit/react';
 
