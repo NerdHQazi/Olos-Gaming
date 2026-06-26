@@ -9,9 +9,7 @@ import {
   OlosMatchRegistry,
 } from "../typechain-types";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Enum mirrors — must match Solidity exactly
-// ─────────────────────────────────────────────────────────────────────────────
+
 const GameMode    = { SOLO: 0,       ONE_V_ONE: 1  } as const;
 const ResultType  = { HIGH_SCORE: 0, WIN_LOSS: 1   } as const;
 const MatchStatus = {
@@ -28,7 +26,7 @@ const GAME = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GVT          = (n: number | bigint) => ethers.parseEther(n.toString());
-const JOIN_TIMEOUT = 10 * 60; // seconds — matches MATCH_JOIN_TIMEOUT in contract
+const JOIN_TIMEOUT = 10 * 60; // seconds — matches MATCH_JOIN_TIMEOUT in our contract
 
 /** Hash a result exactly as OlosEscrow._hashMatchResult (abi.encode, not packed) */
 function hashResult(r: {
