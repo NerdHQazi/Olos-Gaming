@@ -3,8 +3,11 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+import { useState } from 'react';
+import UsernameModal from '@/components/UsernameModal';
 import { useAuth } from '@/context/AuthContext';
+import Navbar from '@/components/Navbar';
+
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { useAppKitAccount } from '@reown/appkit/react';
 
@@ -12,6 +15,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { isLoggedIn, user, isLoading } = useAuth();
   const { isConnected, address } = useAppKitAccount();
+  const { completeUsername } = useAuth();
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
@@ -42,8 +47,8 @@ export default function ProfileScreen() {
             </h1>
             <p className="text-gray-500 font-bold tracking-tight">{user?.email}</p>
           </div>
-          <button className="px-10 py-3.5 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[13px] font-black uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-blue-500/20">
-            Find a Match
+          <button className="px-10 py-3.5 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white text-[13px] font-black uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-blue-500/20" onClick={() => setShowUsernameModal(true)}>
+            Edit Username
           </button>
         </div>
 
@@ -112,6 +117,14 @@ export default function ProfileScreen() {
           </div>
         </div>
       </main>
+    {showUsernameModal && (
+      <UsernameModal
+        onComplete={async (uname: string) => {
+          await completeUsername(uname);
+          setShowUsernameModal(false);
+        }}
+      />
+    )}
     </div>
   );
 }

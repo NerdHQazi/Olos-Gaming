@@ -69,9 +69,28 @@ const login = async (req, res) => {
       user: data.user
     });
   } catch (error) {
+    const errorMsg = error.message || '';
+    console.error('[Backend] Login error details:', {
+      message: errorMsg,
+      name: error.name,
+      code: error.code,
+      stack: error.stack
+    });
+    
+    // Do NOT leak internal error details to clients. Log full details server-side and
+    // return a generic, actionable message.
+    // Handle specific error types
+    if (errorMsg.toLowerCase().includes('fetch failed') || errorMsg.includes('ENOTFOUND')) {
+      console.error('[Backend] Supabase connection failed. Check SUPABASE_URL and internet connectivity.');
+      return res.status(503).json({
+        success: false,
+        message: 'Backend connectivity error: Unable to reach database. Please check if Supabase is active.'
+      });
+    }
+
     res.status(401).json({
       success: false,
-      message: error.message || 'Login failed'
+      message: errorMsg || 'Login failed'
     });
   }
 };

@@ -9,6 +9,7 @@ interface User {
   email: string;
   fullName?: string;
   username?: string;
+  usernameUpdatedAt?: string;
   walletAddress?: string;
 }
 
@@ -17,8 +18,10 @@ interface AuthContextType {
   session: any | null;
   isLoggedIn: boolean;
   isLoading: boolean;
+  needsUsername: boolean;
   login: (data: { user: User; session: any }) => void;
   logout: () => void;
+  completeUsername: (username: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,70 +30,131 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsUsername, setNeedsUsername] = useState(false);
   const { disconnect } = useDisconnect();
   const { address, isConnected } = useAppKitAccount();
 
   useEffect(() => {
-    // Check for saved session on mount
     const savedUser = localStorage.getItem('olos_user');
     const savedSession = localStorage.getItem('olos_session');
 
-    const initAuth = async () => {
-      // Get current session from Supabase SDK
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (currentSession) {
-        // Double check validity with getUser()
-        const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
-        
-        if (!error && verifiedUser) {
-          console.log('[AuthContext] Session verified for:', verifiedUser.email);
-          
-          // Fetch additional profile data (especially wallet_address)
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('wallet_address, full_name, username')
-            .eq('id', verifiedUser.id)
-            .single();
+    // Helper: given a verified Supabase user + session, load/upsert profile and set state
+    const applySession = async (verifiedUser: any, currentSession: any) => {
+      console.log('[AuthContext] Applying session for:', verifiedUser.email);
 
-          setUser({
+      // Fetch existing profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('wallet_address, full_name, username, username_updated_at')
+        .eq('id', verifiedUser.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('[AuthContext] Error fetching profile:', profileError.message);
+      }
+
+      // For OAuth users (Google etc.), upsert profile if it doesn't exist yet
+      const isOAuthUser = !!verifiedUser.app_metadata?.provider && verifiedUser.app_metadata.provider !== 'email';
+      if (isOAuthUser && !profile) {
+        // Insert without a username — user will be prompted via the modal
+        const { error: upsertError } = await supabase
+          .from('profiles')
+          .upsert({
             id: verifiedUser.id,
-            email: verifiedUser.email!,
-            fullName: profile?.full_name || verifiedUser.user_metadata?.full_name,
-            username: profile?.username || verifiedUser.user_metadata?.username,
-            walletAddress: profile?.wallet_address
-          });
-          setSession(currentSession);
-          setIsLoading(false);
-          return;
+            full_name: verifiedUser.user_metadata?.full_name || verifiedUser.user_metadata?.name || '',
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' });
+
+        if (upsertError) {
+          console.error('[AuthContext] OAuth profile upsert error:', upsertError.message);
+        } else {
+          console.log('[AuthContext] OAuth profile upserted (no username yet)');
         }
       }
 
-      // If we reach here, session is missing or invalid
-      // Check if we HAD a saved user to decide if we need to purge
-      if (savedUser || savedSession) {
-        console.warn('[AuthContext] Session invalid or expired. Purging state...');
-        localStorage.removeItem('olos_user');
-        localStorage.removeItem('olos_session');
-        
-        // Disconnect Web3 wallet on session expiry for security
-        try {
-          disconnect();
-        } catch (e) {
-          console.error('[AuthContext] Error disconnecting Web3 wallet on expiry:', e);
-        }
+      // Flag if the user still has no username so the modal can prompt them
+      const resolvedUsername = profile?.username || null;
+      const missingUsername = isOAuthUser && !resolvedUsername;
 
-        try {
-          await supabase.auth.signOut();
-        } catch (e) {}
-      }
-      
-      setUser(null);
-      setSession(null);
+      const userData: User = {
+        id: verifiedUser.id,
+        email: verifiedUser.email!,
+        fullName: profile?.full_name || verifiedUser.user_metadata?.full_name || verifiedUser.user_metadata?.name,
+        username: profile?.username || undefined,
+        usernameUpdatedAt: profile?.username_updated_at || undefined,
+        walletAddress: profile?.wallet_address,
+      };
+
+      setUser(userData);
+      setSession(currentSession);
+      setNeedsUsername(missingUsername ?? false);
+      localStorage.setItem('olos_user', JSON.stringify(userData));
+      localStorage.setItem('olos_session', JSON.stringify(currentSession));
       setIsLoading(false);
     };
 
+    const initAuth = async () => {
+      try {
+        // Get current session from Supabase SDK
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+        if (currentSession) {
+          const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
+
+          if (!error && verifiedUser) {
+            await applySession(verifiedUser, currentSession);
+            return;
+          }
+        }
+
+        // Session missing or invalid — purge stale state
+        if (savedUser || savedSession) {
+          console.warn('[AuthContext] Session invalid or expired. Purging state...');
+          localStorage.removeItem('olos_user');
+          localStorage.removeItem('olos_session');
+          try { disconnect(); } catch (e) { console.error('[AuthContext] disconnect error:', e); }
+          try { await supabase.auth.signOut(); } catch (e) { console.error('[AuthContext] signOut during init error:', e); }
+        }
+
+        setUser(null);
+        setSession(null);
+      } catch (err: any) {
+        // Network or auth SDK errors (e.g. "Failed to fetch") can happen in dev or when Supabase URL is unreachable.
+        console.error('[AuthContext] initAuth error:', err?.message || err);
+        // Keep previous state if present; mark loading false so UI can render a non-blocking state
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     initAuth();
+
+    // Listen for auth state changes (handles OAuth redirects automatically)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log('[AuthContext] Auth event:', event);
+      try {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession) {
+          // Try to get user, but guard against network failures
+          const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
+          if (!error && verifiedUser) {
+            await applySession(verifiedUser, newSession);
+          } else if (error) {
+            console.error('[AuthContext] getUser after auth event error:', error);
+          }
+        }
+
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setSession(null);
+          localStorage.removeItem('olos_user');
+          localStorage.removeItem('olos_session');
+        }
+      } catch (err: any) {
+        console.error('[AuthContext] onAuthStateChange handler error:', err?.message || err);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Sync wallet address to Supabase profile when connected
@@ -156,6 +220,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const completeUsername = async (username: string) => {
+    if (!user?.id) throw new Error('Not authenticated');
+
+    // Check if user has updated their username in the last 30 days
+    if (user.usernameUpdatedAt) {
+      const lastUpdate = new Date(user.usernameUpdatedAt);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      if (lastUpdate > thirtyDaysAgo) {
+        const nextUpdate = new Date(lastUpdate);
+        nextUpdate.setDate(nextUpdate.getDate() + 30);
+        throw new Error(`You can only change your username once a month. Next update available on ${nextUpdate.toLocaleDateString()}.`);
+      }
+    }
+
+    const now = new Date().toISOString();
+
+    // Update DB
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        username,
+        username_updated_at: now,
+        updated_at: now
+      })
+      .eq('id', user.id);
+
+    if (error) throw error;
+
+    // Update local state
+    setNeedsUsername(false);
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, username, usernameUpdatedAt: now };
+      localStorage.setItem('olos_user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const logout = async () => {
     try {
       // Call Supabase signOut first while session is still in memory/local storage
@@ -189,8 +293,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session, 
       isLoggedIn: !!user, 
       isLoading,
+      needsUsername,
       login,
-      logout
+      logout,
+      completeUsername,
     }}>
       {children}
     </AuthContext.Provider>

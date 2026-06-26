@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit, Bai_Jamjuree } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { WalletProvider } from "@/context/WalletContext";
+import { GlobalAuthHandler } from "@/components/GlobalAuthHandler";
 import { Web3Providers } from "./providers";
 import { headers } from "next/headers";
 import { cookieToInitialState } from "wagmi";
@@ -34,9 +34,8 @@ export default async function RootLayout({
       <body className={`${inter.variable} ${outfit.variable} ${baiJamjuree.variable} antialiased`}>
         <Web3Providers initialState={initialState}>
           <AuthProvider>
-            <WalletProvider>
-              {children}
-            </WalletProvider>
+            <GlobalAuthHandler />
+            {children}
           </AuthProvider>
         </Web3Providers>
       </body>

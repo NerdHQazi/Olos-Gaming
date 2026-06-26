@@ -1,9 +1,15 @@
+'use client';
+
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+
 
 export default function HomeScreen() {
+  const { needsUsername, completeUsername } = useAuth();
   return (
     <div className="min-h-screen bg-[#0B1121] text-white selection:bg-olos-blue/30 overflow-x-hidden">
+
       <Navbar />
       
       {/* Hero Section */}
