@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
@@ -11,6 +11,7 @@ const PRESET_AMOUNTS = [100, 250, 500, 1000];
 const USER_BALANCE = 1000; // TODO: fetch from backend/contract
 
 export default function StakePage() {
+  const [hydrated, setHydrated] = useState(false);
   const { isConnected, address } = useAppKitAccount();
   const { isLoggedIn } = useAuth();
   const [tab, setTab] = useState<StakeTab>("stake");
@@ -18,9 +19,13 @@ export default function StakePage() {
   const [loading, setLoading] = useState(false);
   const [txState, setTxState] = useState<"idle" | "confirming" | "success" | "error">("idle");
 
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
   const isWeb3User = isConnected && address;
   // Strictly gate behind OLOS authentication
-  const isAuthed = isLoggedIn;
+  const isAuthed = hydrated && isLoggedIn;
 
   async function handleStake() {
     if (!amount || isNaN(Number(amount))) return;
@@ -74,8 +79,20 @@ export default function StakePage() {
             </p>
           </div>
 
+          {!hydrated && (
+            <div className="bg-[#0B1121] border border-white/10 rounded-2xl p-8 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-olos-blue/10 flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <h2 className="text-white font-bold text-lg mb-2">Stake GVT</h2>
+              <p className="text-gray-400 text-sm">Preparing your staking dashboard...</p>
+            </div>
+          )}
+
           {/* Not authed */}
-          {!isAuthed && (
+          {hydrated && !isAuthed && (
             <div className="bg-[#0B1121] border border-white/10 rounded-2xl p-8 text-center">
               <div className="w-14 h-14 rounded-2xl bg-olos-blue/10 flex items-center justify-center mx-auto mb-4">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -91,7 +108,7 @@ export default function StakePage() {
           )}
 
           {/* Authed */}
-          {isAuthed && (
+          {hydrated && isAuthed && (
             <>
               {/* Wallet type banner */}
               <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border mb-6 ${

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useDisconnect, useAppKitAccount } from "@reown/appkit/react";
 
@@ -26,20 +26,45 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function readStoredJson<T>(key: string): T | null {
+  if (typeof window === 'undefined') return null;
+
+  const rawValue = localStorage.getItem(key);
+  if (!rawValue) return null;
+
+  try {
+    return JSON.parse(rawValue) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(() => readStoredJson<User>('olos_user'));
+  const [session, setSession] = useState<any | null>(() => readStoredJson<any>('olos_session'));
   const [isLoading, setIsLoading] = useState(true);
   const [needsUsername, setNeedsUsername] = useState(false);
+  const isSigningOutRef = useRef(false);
+  const isInitializingRef = useRef(false);
+  const initInFlightRef = useRef<Promise<void> | null>(null);
+  const applySessionInFlightRef = useRef<Promise<void> | null>(null);
   const { disconnect } = useDisconnect();
   const { address, isConnected } = useAppKitAccount();
+
+  const clearLocalAuthState = () => {
+    setUser(null);
+    setSession(null);
+    setNeedsUsername(false);
+    localStorage.removeItem('olos_user');
+    localStorage.removeItem('olos_session');
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('olos_user');
     const savedSession = localStorage.getItem('olos_session');
 
     // Helper: given a verified Supabase user + session, load/upsert profile and set state
-    const applySession = async (verifiedUser: any, currentSession: any) => {
+    const applySessionCore = async (verifiedUser: any, currentSession: any) => {
       console.log('[AuthContext] Applying session for:', verifiedUser.email);
 
       // Fetch existing profile
@@ -93,13 +118,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     };
 
-    const initAuth = async () => {
+    const applySession = async (verifiedUser: any, currentSession: any) => {
+      if (applySessionInFlightRef.current) {
+        await applySessionInFlightRef.current;
+        return;
+      }
+
+      const inFlight = applySessionCore(verifiedUser, currentSession).finally(() => {
+        applySessionInFlightRef.current = null;
+      });
+
+      applySessionInFlightRef.current = inFlight;
+      await inFlight;
+    };
+
+    const runInitAuth = async () => {
+      if (isSigningOutRef.current) {
+        setIsLoading(false);
+        return;
+      }
+
+      isInitializingRef.current = true;
+
       try {
         // Get current session from Supabase SDK
         const { data: { session: currentSession } } = await supabase.auth.getSession();
 
+        if (isSigningOutRef.current) {
+          return;
+        }
+
         if (currentSession) {
           const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
+
+          if (isSigningOutRef.current) {
+            return;
+          }
 
           if (!error && verifiedUser) {
             await applySession(verifiedUser, currentSession);
@@ -110,8 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Session missing or invalid — purge stale state
         if (savedUser || savedSession) {
           console.warn('[AuthContext] Session invalid or expired. Purging state...');
-          localStorage.removeItem('olos_user');
-          localStorage.removeItem('olos_session');
+          clearLocalAuthState();
           try { disconnect(); } catch (e) { console.error('[AuthContext] disconnect error:', e); }
           try { await supabase.auth.signOut(); } catch (e) { console.error('[AuthContext] signOut during init error:', e); }
         }
@@ -123,16 +176,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('[AuthContext] initAuth error:', err?.message || err);
         // Keep previous state if present; mark loading false so UI can render a non-blocking state
       } finally {
+        isInitializingRef.current = false;
         setIsLoading(false);
       }
     };
 
-    initAuth();
+    const initAuth = () => {
+      if (initInFlightRef.current) {
+        return initInFlightRef.current;
+      }
+
+      const inFlight = runInitAuth().finally(() => {
+        initInFlightRef.current = null;
+      });
+
+      initInFlightRef.current = inFlight;
+      return inFlight;
+    };
+
+    void initAuth();
 
     // Listen for auth state changes (handles OAuth redirects automatically)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('[AuthContext] Auth event:', event);
       try {
+        if (event === 'SIGNED_OUT') {
+          clearLocalAuthState();
+          return;
+        }
+
+        if (isInitializingRef.current && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          return;
+        }
+
+        if (isSigningOutRef.current) {
+          return;
+        }
+
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession) {
           // Try to get user, but guard against network failures
           const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
@@ -143,12 +223,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setSession(null);
-          localStorage.removeItem('olos_user');
-          localStorage.removeItem('olos_session');
-        }
       } catch (err: any) {
         console.error('[AuthContext] onAuthStateChange handler error:', err?.message || err);
       }
@@ -206,6 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isConnected, address]);
 
   const login = async (data: { user: User; session: any }) => {
+    isSigningOutRef.current = false;
     setUser(data.user);
     setSession(data.session);
     localStorage.setItem('olos_user', JSON.stringify(data.user));
@@ -261,6 +336,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    isSigningOutRef.current = true;
+    clearLocalAuthState();
+
     try {
       // Call Supabase signOut first while session is still in memory/local storage
       // This ensures the client knows which session to end.
@@ -271,13 +349,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       // Catch network errors (like "Failed to fetch") or other exceptions
       console.error('[AuthContext] Exception during signOut fetch:', e);
+    } finally {
+      isSigningOutRef.current = false;
     }
-
-    // Always clear local state even if the network request failed
-    setUser(null);
-    setSession(null);
-    localStorage.removeItem('olos_user');
-    localStorage.removeItem('olos_session');
     
     // Auto-disconnect Web3 wallet for security
     try {
