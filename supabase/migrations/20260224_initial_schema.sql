@@ -1,9 +1,104 @@
 -- STEP 1: DATABASE DESIGN
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- TABLE: profiles
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    username_updated_at TIMESTAMP WITH TIME ZONE,
+    username TEXT UNIQUE,
+    full_name TEXT,
+    avatar_url TEXT,
+    email TEXT UNIQUE,
+    wallet_address TEXT,
+    CONSTRAINT username_length CHECK (char_length(username) >= 3)
+);
+
+-- RLS for profiles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone." ON public.profiles;
+CREATE POLICY "Public profiles are viewable by everyone." ON public.profiles
+    FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can insert their own profile." ON public.profiles;
+CREATE POLICY "Users can insert their own profile." ON public.profiles
+    FOR INSERT WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile." ON public.profiles;
+CREATE POLICY "Users can update own profile." ON public.profiles
+    FOR UPDATE USING (auth.uid() = id);
+
+-- TABLE: wallets
+CREATE TABLE IF NOT EXISTS public.wallets (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id),
+    balance NUMERIC DEFAULT 1000.00,
+    locked_balance NUMERIC DEFAULT 0.00,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- RLS for wallets
+ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own wallet" ON public.wallets;
+CREATE POLICY "Users can view their own wallet" ON public.wallets
+    FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own wallet" ON public.wallets;
+CREATE POLICY "Users can insert their own wallet" ON public.wallets
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- FUNCTION: lock_stake
+CREATE OR REPLACE FUNCTION public.lock_stake(
+    p_user_id UUID,
+    p_amount NUMERIC
+) RETURNS BOOLEAN AS $lock_stake_tag$
+DECLARE
+    v_balance NUMERIC;
+BEGIN
+    SELECT balance INTO v_balance FROM public.wallets WHERE user_id = p_user_id FOR UPDATE;
+
+    IF v_balance >= p_amount THEN
+        UPDATE public.wallets
+        SET
+            balance = balance - p_amount,
+            locked_balance = locked_balance + p_amount,
+            updated_at = NOW()
+        WHERE user_id = p_user_id;
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END;
+$lock_stake_tag$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- FUNCTION: unlock_stake
+CREATE OR REPLACE FUNCTION public.unlock_stake(
+    p_user_id UUID,
+    p_amount NUMERIC
+) RETURNS BOOLEAN AS $unlock_stake_tag$
+DECLARE
+    v_locked_balance NUMERIC;
+BEGIN
+    SELECT locked_balance INTO v_locked_balance FROM public.wallets WHERE user_id = p_user_id FOR UPDATE;
+
+    IF v_locked_balance >= p_amount THEN
+        UPDATE public.wallets
+        SET
+            balance = balance + p_amount,
+            locked_balance = locked_balance - p_amount,
+            updated_at = NOW()
+        WHERE user_id = p_user_id;
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END;
+$unlock_stake_tag$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- TABLE: match_queue
 CREATE TABLE IF NOT EXISTS public.match_queue (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) NOT NULL,
     game_type TEXT NOT NULL,
     stake_amount NUMERIC NOT NULL,
@@ -18,7 +113,7 @@ CREATE INDEX IF NOT EXISTS idx_match_queue_created_at ON public.match_queue (cre
 
 -- TABLE: matches
 CREATE TABLE IF NOT EXISTS public.matches (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     player1_id UUID REFERENCES auth.users(id) NOT NULL,
     player2_id UUID REFERENCES auth.users(id) NOT NULL,
     game_type TEXT NOT NULL,
@@ -49,7 +144,7 @@ CREATE INDEX IF NOT EXISTS idx_matches_players ON public.matches (player1_id, pl
 
 -- TABLE: match_events
 CREATE TABLE IF NOT EXISTS public.match_events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     match_id UUID REFERENCES public.matches(id) NOT NULL,
     player_id UUID REFERENCES auth.users(id) NOT NULL,
     event_type TEXT NOT NULL, -- move / apple_eaten / death / reconnect / timeout
@@ -83,6 +178,16 @@ CREATE POLICY "Players can view events for their matches" ON public.match_events
         )
     );
 
+DROP POLICY IF EXISTS "Players can insert events for their matches" ON public.match_events;
+CREATE POLICY "Players can insert events for their matches" ON public.match_events
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.matches
+            WHERE matches.id = match_events.match_id
+            AND (matches.player1_id = auth.uid() OR matches.player2_id = auth.uid())
+        )
+    );
+
 -- Enable Realtime
 DO $$
 BEGIN
@@ -106,6 +211,44 @@ ON CONFLICT (user_id) DO NOTHING;
 -- Enforce REPLICA IDENTITY FULL for Realtime consistency
 ALTER TABLE public.matches REPLICA IDENTITY FULL;
 ALTER TABLE public.match_queue REPLICA IDENTITY FULL;
+
+-- FUNCTION: release_winnings
+CREATE OR REPLACE FUNCTION public.release_winnings(
+    p_match_id UUID,
+    p_winner_id UUID
+) RETURNS VOID AS $release_tag$
+DECLARE
+    v_match RECORD;
+    v_total_stake NUMERIC;
+    v_fee NUMERIC;
+    v_winner_prize NUMERIC;
+BEGIN
+    SELECT * INTO v_match FROM public.matches WHERE id = p_match_id FOR UPDATE;
+
+    IF v_match.status != 'finished' OR v_match.winner_id IS NULL THEN
+        RETURN;
+    END IF;
+
+    v_total_stake := v_match.stake_amount * 2;
+    v_fee := v_total_stake * 0.10; -- 10% Platform Fee
+    v_winner_prize := v_total_stake - v_fee;
+
+    -- Unlock stake from player 1
+    UPDATE public.wallets
+    SET locked_balance = locked_balance - v_match.stake_amount
+    WHERE user_id = v_match.player1_id;
+
+    -- Unlock stake from player 2
+    UPDATE public.wallets
+    SET locked_balance = locked_balance - v_match.stake_amount
+    WHERE user_id = v_match.player2_id;
+
+    -- Award prize to winner
+    UPDATE public.wallets
+    SET balance = balance + v_winner_prize
+    WHERE user_id = p_winner_id;
+END;
+$release_tag$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- STEP 2: MATCHMAKING FUNCTION (POSTGRESQL)
 
@@ -438,98 +581,34 @@ $forfeit_tag$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- STEP 6: WALLET INTEGRATION & MONEY SAFETY
 
--- TABLE: wallets
-CREATE TABLE IF NOT EXISTS public.wallets (
-    user_id UUID PRIMARY KEY REFERENCES auth.users(id),
-    balance NUMERIC DEFAULT 1000.00,
-    locked_balance NUMERIC DEFAULT 0.00,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Wallet tables, policies, and stake functions are defined earlier to satisfy dependency ordering.
 
--- RLS for wallets
-ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own wallet" ON public.wallets
-    FOR SELECT USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Users can insert their own wallet" ON public.wallets;
-CREATE POLICY "Users can insert their own wallet" ON public.wallets
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- FUNCTION: lock_stake
-CREATE OR REPLACE FUNCTION public.lock_stake(
-    p_user_id UUID,
-    p_amount NUMERIC
-) RETURNS BOOLEAN AS $lock_stake_tag$
-DECLARE
-    v_balance NUMERIC;
+-- Create profile and wallet for new auth users via a single idempotent trigger path.
+CREATE OR REPLACE FUNCTION public.handle_new_user_provisioning()
+RETURNS TRIGGER AS $new_user_provisioning_tag$
 BEGIN
-    SELECT balance INTO v_balance FROM public.wallets WHERE user_id = p_user_id FOR UPDATE;
-    
-    IF v_balance >= p_amount THEN
-        UPDATE public.wallets 
-        SET 
-            balance = balance - p_amount,
-            locked_balance = locked_balance + p_amount,
-            updated_at = NOW()
-        WHERE user_id = p_user_id;
-        RETURN TRUE;
-    ELSE
-        RETURN FALSE;
-    END IF;
+    INSERT INTO public.profiles (id, full_name, username, email, updated_at)
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+        NEW.raw_user_meta_data->>'username',
+        NEW.email,
+        NOW()
+    )
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.wallets (user_id)
+    VALUES (NEW.id)
+    ON CONFLICT (user_id) DO NOTHING;
+
+    RETURN NEW;
 END;
-$lock_stake_tag$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- FUNCTION: release_winnings
-CREATE OR REPLACE FUNCTION public.release_winnings(
-    p_match_id UUID,
-    p_winner_id UUID
-) RETURNS VOID AS $release_tag$
-DECLARE
-    v_match RECORD;
-    v_total_stake NUMERIC;
-    v_fee NUMERIC;
-    v_winner_prize NUMERIC;
-BEGIN
-    SELECT * INTO v_match FROM public.matches WHERE id = p_match_id FOR UPDATE;
-    
-    IF v_match.status != 'finished' OR v_match.winner_id IS NULL THEN
-        RETURN;
-    END IF;
-
-    v_total_stake := v_match.stake_amount * 2;
-    v_fee := v_total_stake * 0.10; -- 10% Platform Fee
-    v_winner_prize := v_total_stake - v_fee;
-
-    -- Unlock stake from player 1
-    UPDATE public.wallets 
-    SET locked_balance = locked_balance - v_match.stake_amount 
-    WHERE user_id = v_match.player1_id;
-
-    -- Unlock stake from player 2
-    UPDATE public.wallets 
-    SET locked_balance = locked_balance - v_match.stake_amount 
-    WHERE user_id = v_match.player2_id;
-
-    -- Award prize to winner
-    UPDATE public.wallets 
-    SET balance = balance + v_winner_prize 
-    WHERE user_id = p_winner_id;
-END;
-$release_tag$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Automatically create a wallet for new users
-CREATE OR REPLACE FUNCTION public.handle_new_user_wallet()
-RETURNS TRIGGER AS $wallet_trigger_tag$
-BEGIN
-  INSERT INTO public.wallets (user_id) VALUES (NEW.id);
-  RETURN NEW;
-END;
-$wallet_trigger_tag$ LANGUAGE plpgsql SECURITY DEFINER;
+$new_user_provisioning_tag$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_wallet();
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_provisioning();
 
 -- STEP 7: FORFEIT & REMATCH LOGIC
 
@@ -593,3 +672,23 @@ BEGIN
     RETURN jsonb_build_object('status', 'success');
 END;
 $trigger_rematch_tag$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.cancel_matchmaking(
+    p_user_id UUID
+) RETURNS JSONB AS $cancel_matchmaking_tag$
+DECLARE
+    v_old_entry RECORD;
+BEGIN
+    FOR v_old_entry IN
+        SELECT stake_amount FROM public.match_queue
+        WHERE user_id = p_user_id AND status = 'searching'
+    LOOP
+        PERFORM public.unlock_stake(p_user_id, v_old_entry.stake_amount);
+    END LOOP;
+
+    DELETE FROM public.match_queue
+    WHERE user_id = p_user_id AND status = 'searching';
+
+    RETURN jsonb_build_object('status', 'cancelled');
+END;
+$cancel_matchmaking_tag$ LANGUAGE plpgsql SECURITY DEFINER;

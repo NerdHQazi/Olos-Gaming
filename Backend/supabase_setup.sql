@@ -2,6 +2,7 @@
 CREATE TABLE profiles (
   id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL PRIMARY KEY,
   updated_at timestamp with time zone,
+  username_updated_at timestamp with time zone,
   username text UNIQUE,
   full_name text,
   avatar_url text,
@@ -24,21 +25,29 @@ CREATE POLICY "Users can update own profile." ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
 -- 3. Create a function to handle new user signups
-CREATE OR REPLACE FUNCTION public.handle_new_user()
+CREATE OR REPLACE FUNCTION public.handle_new_user_provisioning()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, username, email)
+  INSERT INTO public.profiles (id, full_name, username, email, updated_at)
   VALUES (
     new.id, 
-    new.raw_user_meta_data->>'full_name', 
+    COALESCE(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'),
     new.raw_user_meta_data->>'username',
-    new.email
-  );
+    new.email,
+    NOW()
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO public.wallets (user_id)
+  VALUES (new.id)
+  ON CONFLICT (user_id) DO NOTHING;
+
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 4. Create a trigger to call the function on signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_provisioning();

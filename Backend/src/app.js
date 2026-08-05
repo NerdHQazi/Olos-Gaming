@@ -14,10 +14,23 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,  // Allow CORS to handle it
+}));
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow requests from localhost (dev) and any origin if no origin header
+    if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      callback(null, true);
+    } else {
+      // In production, you'd want to restrict this
+      callback(null, true);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 
