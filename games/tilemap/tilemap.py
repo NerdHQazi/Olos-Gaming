@@ -1,5 +1,40 @@
 import pygame
 
+class imageTileMap: #Fetches an image tilemap instead of a colour tilemap based on the provided file
+    def __init__(self, tileset, width = 10, height = 10, rect = None):
+        self.size = (height, width)
+        self.tileset = tileset #some image reference
+        self.map = np.zeros(size, dtype=int)
+        
+        h, w = self.size
+        self.image = pygame.Surface((32*w, 32*h)) #32 because of the size of the tiles being tested. however, in full deployment, 32 becomes itself a variable.
+        if rect:
+            self.rect = pygame.Rect(rect)
+        else:
+            self.rect = self.image.get_rect()
+        
+    def render(self): #Show the tilemap as-is from file
+        m, n = self.map.shape
+        for i in range(m):
+            for j in range(n):
+                tile = self.tileset.tiles[self.map[i, j]]
+                self.image.blit(tile, (j*32, i*32))
+
+    def set_zero(self): #Fill the tilemap with the 0th tile
+        self.map = np.zeros(self.size, dtype=int)
+        print(self.map)
+        print(self.map.shape)
+        self.render()
+    
+    def __str__(self):
+        return f'{self.__class__.__name__} {self.size}' 
+
+    def set_random(self): #Fill the tilemap with random tiles
+        n = len(self.tileset.tiles)
+        self.map = np.random.randint(n, size=self.size)
+        print(self.map)
+        self.render()
+
 class TileMap:
     """
     A class responsible for rendering a 2D tilemap grid.
