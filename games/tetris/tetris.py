@@ -41,7 +41,7 @@ class Figure:
 
 class Tetris:
     def __init__(self, height, width):
-        self.level = 2 #initial speed
+        self.level = 1 #initial speed
         self.score = 0 # initial score
         self.state = "start" # initial game state
         self.field = [] # empty field
@@ -57,7 +57,7 @@ class Tetris:
             new_line = []
             for j in range (width):
                 new_line.append(0)
-            self.field.append(new_line)
+            self.field.append(new_line)           
 
     def new_figure(self):
         self.figure = Figure(3, 0)
@@ -147,15 +147,23 @@ counter = 0
 pressing_down = False
 
 while not done:
+   
     if game.figure is None:
         game.new_figure()
     counter += 1
+    line_breaker = 0
     if counter > 100000:
         counter = 0
 
     if counter % (fps // game.level // 2) == 0 or pressing_down:
         if game.state == "start":
             game.go_down()
+            game.level = int(game.broken_lines/5)+1 #Increases the level every 5 lines broken. Level always starts at one unless this is changed.
+            print(game.broken_lines, game.level) #Get rid of this line during deployment.
+        
+            #Level 12 is the framerate limit
+            if game.level >= 12:
+                game.level = 12
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -174,7 +182,7 @@ while not done:
             if event.key == pygame.K_ESCAPE:
                 game.__init__(20, 10)
 
-    if event.type == pygame.KEYUP:
+        if event.type == pygame.KEYUP: #This should work fine...
             if event.key == pygame.K_DOWN:
                 pressing_down = False
 
