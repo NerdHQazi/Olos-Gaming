@@ -1,4 +1,5 @@
 python-chess
+pygame-ce
 fastapi
 uvicorn
 python-socketio
