@@ -1,224 +1,390 @@
 import pygame
-import pygame.sprite
-# ---------------
-import nltk
-import string
-import random, time, sys
-from nltk.corpus import wordnet
-nltk.download('wordnet')
-# hand made files
+import sys
+import os
+
+# Import Engine & UI Basics
+from scrabble_engine import Game, Tile, LETTER_VALUES
 import GameBasics
-# screen
-pygame.init()
-screenWidth, screenHeight = 766, 784
-screen = pygame.display.set_mode((screenWidth, screenHeight))
-pygame.display.set_caption("Scrabble")
-clock = pygame.time.Clock()
-pygame.display.flip()
-# color
-def RANDOM_COLOR():
-    return (random.randint(0,255),random.randint(0,255),random.randint(0,255))
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-WHITE = (255, 255, 255)
-BLACK = (0,0,0)
-DARK_GRAY = (169,169,169)
-SPACE_COLOR = (220,205,173,255)
-PINK = (255,192,203)
-LIGHT_BLUE = (173,216,230)
-GOLD = (255,215,0)
-YELLOW = (255,255,0)
-# text
-Title = GameBasics.Text("Scrabble",40,BLACK,((screenWidth // 2), 10))
-letters = []
-letter_values = {
-    'A': 1, 'B': 3, 'C': 3, 'D': 2, 'E': 1, 'F': 4, 'G': 2, 'H': 4,
-    'I': 1, 'J': 8, 'K': 5, 'L': 1, 'M': 3, 'N': 1, 'O': 1, 'P': 3,
-    'Q': 10, 'R': 1, 'S': 1, 'T': 1, 'U': 1, 'V': 4, 'W': 4, 'X': 8,
-    'Y': 4, 'Z': 10, "_": 2
-}
-letter_list = string.ascii_uppercase + "_"
-for y, letter in enumerate(letter_list):
-    value = letter_values.get(letter, 0)
-    text = GameBasics.Text(f"{letter}: {value}", 20, BLACK, (20, (y * 15) + 10))
-    letters.append(text)
-spellWord = GameBasics.Text("Current Word:",20,BLACK,(screenWidth / 2, screenHeight - 125))
-points = GameBasics.Text("Points: ", 20, WHITE, (screenWidth - 100, screenHeight - 125))
-# wrap text
-definitionText = GameBasics.WrapText("Definition: ",17,BLACK,(10, screenHeight - 105), screenWidth - 10)
-# color space
-def ColorSpace(x, y):
-    if (x == 0 or x == 14) and (y == 0 or y == 14):
-        return "3_W"
-    if (x == 0 or x == 14) and (y == 14 / 2):
-        return "3_W"
-    if (x == 14 / 2) and (y == 0 or y == 14):
-        return "3_W"
-    if (x, y) in [(13, 1), (12, 2), (11, 3), (10, 4)] or (x, y) in [(1, 1), (2, 2), (3, 3), (4, 4)]:
-        return "2_W"
-    if (x, y) in [(1, 13), (2, 12), (3, 11), (4, 10)] or (x, y) in [(13, 13), (12, 12), (11, 11), (10, 10)]:
-        return "2_W"
-    if (x, y) in [(5, 5), (9, 5), (5, 9), (9, 9)] or (x, y) in [(1, 9), (1, 5), (5, 13), (9, 13)] or (x, y) in [(13, 9), (13, 5), (5, 1), (9, 1)]:
-        return "3_L"
-    if (x, y) in [(0, 3), (0, 11), (2, 6), (2, 8), (3, 7), (6, 6)] or (x, y) in [(3, 14), (11, 14), (6, 12), (8, 12), (7, 11), (6, 8)]:
-        return "2_L"
-    if (x, y) in [(14, 3), (14, 11), (12, 6), (12, 8), (11, 7)] or (x, y) in [(3, 0), (11, 0), (6, 2), (8, 2), (7, 3), (8, 6), (8, 8)]:
-        return "2_L"
-    if (x == 14 / 2) and (y == 14 / 2):
-        return "S"
-    return False
-# space
-bord_list = []
-button_width = 40
-button_height = 40
-board_width = 15 * button_width
-start_x = (screenWidth - board_width) // 2
-for x in range(15):
-    for y in range(15):
-        bordbutton = GameBasics.BordButton(start_x + (x * button_width), (y * button_height) + 40, button_width, button_height, GREEN, SPACE_COLOR, WHITE)
-        if ColorSpace(x, y) == "3_W":
-            bordbutton.inactive_color = RED
-            bordbutton.text = "3W"
-        if ColorSpace(x, y) == "2_W":
-            bordbutton.inactive_color = PINK
-            bordbutton.text = "2W"
-        if ColorSpace(x, y) == "3_L":
-            bordbutton.inactive_color = BLUE
-            bordbutton.text = "3L"
-        if ColorSpace(x, y) == "2_L":
-            bordbutton.inactive_color = LIGHT_BLUE
-            bordbutton.text = "2L"
-        if ColorSpace(x, y) == "S":
-            bordbutton.inactive_color = GOLD
-            bordbutton.text = "S"
-        bord_list.append(bordbutton)
-# button
-skip_turn = GameBasics.Button(screenWidth - 150, screenHeight - 60, 100, 50, "Skip", RED, WHITE, 0)
-# letter in hand
-items_to_remove = [] 
-letter_list = []
-for x in range(7):
-    lestters = GameBasics.Button((x * 60) + 155, screenHeight - 60, 50, 50, random.choice(string.ascii_uppercase + "_"), GREEN, BLACK, 1)
-    letter_list.append(lestters)
-# define words
-def get_word_definition(word):
-    synsets = wordnet.synsets(word)
-    if synsets:
-        synset = synsets[0]
-        definition = synset.definition()
-        return definition
-    else:
-        return "None"
-# loop
-currentWord = "Current Word: "
-checkWord = ""
-currentDef = "Definition: "
-wordIndex = 0
-skippedTurns = 0
-totalPoints = 0
-currentValue = 0
-running = True
-while running:
-    events = pygame.event.get()
-    for event in events:
-        if event.type == pygame.QUIT:
-            running = False
-            sys.exit()
-        elif event.type == pygame.VIDEORESIZE:
-            screenWidth, screenHeight = event.size
-        # handle skip button
-        if skippedTurns < 3:
-            skip_turn.handle_event(event)
-            if skip_turn.clicked:
-                skippedTurns += 1
-                skip_turn.reset()
-                for index, item in enumerate(letter_list):
-                    new_letter = GameBasics.Button(item.x, screenHeight - 60, 50, 50, random.choice(string.ascii_uppercase), GREEN, BLACK, 1)
-                    letter_list[index] = new_letter
-                    new_letter.reset()
-            # handle hand letters
-            for handLetter in letter_list:
-                handLetter.handle_event(event)
-                if handLetter.color == handLetter.active_color:
-                    handLetter.textColor = handLetter.active_color
+from GameBasics import (
+    RED, GREEN, BLUE, LIGHT_BLUE, WHITE, BLACK, DARK_GRAY, LIGHT_GRAY,
+    SPACE_COLOR, PINK, GOLD, YELLOW, WOOD, DARK_WOOD, PURPLE,
+    Text, WrapText, BordButton, Button, BlankTileModal
+)
+
+def main():
+    pygame.init()
+    screenWidth, screenHeight = 860, 860
+    screen = pygame.display.set_mode((screenWidth, screenHeight), pygame.RESIZABLE)
+    pygame.display.set_caption("Scrabble - Olos Gaming")
+    clock = pygame.time.Clock()
+
+    # Initialize Engine
+    game = Game(player_names=["Player 1", "Player 2"])
+
+    # Board layout dimensions
+    grid_size = 15
+    cell_size = 40
+    board_px = grid_size * cell_size  # 600px
+    start_x = (screenWidth - board_px) // 2  # centered (130px)
+    start_y = 70
+
+    # Create 15x15 Board Cells
+    board_cells = []
+    for r in range(grid_size):
+        row_cells = []
+        for c in range(grid_size):
+            cx = start_x + (c * cell_size)
+            cy = start_y + (r * cell_size)
+            btn = BordButton(cx, cy, cell_size, cell_size, GREEN, SPACE_COLOR, WHITE)
+            
+            # Bonus color & label initialization
+            mult = game.board.multipliers[r][c]
+            if mult == "3W":
+                btn.inactive_color = RED
+                btn.text = "3W"
+                btn.textColor = WHITE
+            elif mult == "2W":
+                btn.inactive_color = PINK
+                btn.text = "2W"
+                btn.textColor = BLACK
+            elif mult == "3L":
+                btn.inactive_color = BLUE
+                btn.text = "3L"
+                btn.textColor = WHITE
+            elif mult == "2L":
+                btn.inactive_color = LIGHT_BLUE
+                btn.text = "2L"
+                btn.textColor = BLACK
+            elif mult == "S":
+                btn.inactive_color = GOLD
+                btn.text = "★"
+                btn.textColor = BLACK
+
+            btn.original_text = btn.text
+            row_cells.append(btn)
+        board_cells.append(row_cells)
+
+    # Blank Tile Selection Modal
+    blank_modal = BlankTileModal(screenWidth, screenHeight)
+    pending_blank_target = None  # (row, col, rack_index)
+
+    # UI Controls
+    rack_buttons = []
+    selected_rack_index = None
+    selected_exchange_indices = set()
+    exchange_mode = False
+
+    # Action Buttons (Row 1 under rack)
+    btn_y = start_y + board_px + 75
+    btn_w, btn_h = 100, 40
+    spacing = 15
+    
+    btn_submit = Button(start_x, btn_y, btn_w, btn_h, "Submit", GREEN, WHITE, outlineSize=2, font_size=20, text_color=WHITE)
+    btn_submit.color = GREEN
+    
+    btn_clear = Button(start_x + (btn_w + spacing), btn_y, btn_w, btn_h, "Recall", DARK_GRAY, WHITE, outlineSize=1, font_size=20, text_color=WHITE)
+    btn_clear.color = DARK_GRAY
+    
+    btn_exchange = Button(start_x + 2 * (btn_w + spacing), btn_y, btn_w, btn_h, "Exchange", PURPLE, WHITE, outlineSize=1, font_size=20, text_color=WHITE)
+    btn_exchange.color = PURPLE
+
+    btn_pass = Button(start_x + 3 * (btn_w + spacing), btn_y, btn_w, btn_h, "Pass", RED, WHITE, outlineSize=1, font_size=20, text_color=WHITE)
+    btn_pass.color = RED
+
+    btn_shuffle = Button(start_x + 4 * (btn_w + spacing), btn_y, btn_w, btn_h, "Shuffle", BLUE, WHITE, outlineSize=1, font_size=20, text_color=WHITE)
+    btn_shuffle.color = BLUE
+
+    # Action Buttons (Top Bar)
+    btn_restart = Button(screenWidth - 190, 15, 80, 35, "Restart", GOLD, WHITE, outlineSize=1, font_size=18, text_color=BLACK)
+    btn_quit = Button(screenWidth - 100, 15, 80, 35, "Quit", RED, WHITE, outlineSize=1, font_size=18, text_color=WHITE)
+
+    # Header & Status Text Elements
+    title_text = Text("SCRABBLE", 36, BLACK, (screenWidth // 2, 15), align="center")
+    turn_text = Text("Turn: Player 1", 22, BLACK, (start_x, 50), align="left")
+    score_text = Text("Player 1: 0  |  Player 2: 0", 22, BLACK, (screenWidth // 2, 50), align="center")
+    bag_text = Text("Bag: 86", 22, BLACK, (start_x + board_px, 50), align="right")
+
+    feedback_text = Text("Game started. Place tiles and click Submit!", 20, BLUE, (screenWidth // 2, start_y + board_px + 125), align="center")
+    def_text = WrapText("Definition: ", 18, BLACK, (start_x, start_y + board_px + 150), board_px)
+
+    running = True
+
+    def sync_board_cells():
+        """Syncs engine board state (locked/draft tiles) with visual BordButtons."""
+        for r in range(grid_size):
+            for c in range(grid_size):
+                btn = board_cells[r][c]
+                locked = game.board.get_locked_tile(r, c)
+                draft = game.board.draft_tiles[r][c]
+
+                if locked:
+                    btn.is_locked = True
+                    btn.is_draft = False
+                    btn.text = locked.get_char()
+                    btn.color = WOOD
+                    btn.textColor = BLACK
+                    btn.points_val = locked.points
+                elif draft:
+                    btn.is_locked = False
+                    btn.is_draft = True
+                    btn.text = draft.get_char()
+                    btn.color = YELLOW
+                    btn.textColor = BLACK
+                    btn.points_val = draft.points
                 else:
-                    handLetter.textColor = handLetter.inactive_color
-                if handLetter.clicked:
-                    if handLetter.y == screenHeight - 60:
-                        handLetter.y -= 10
-                        checkWord += handLetter.text
-                        handLetter.ready = True
+                    btn.is_locked = False
+                    btn.is_draft = False
+                    btn.text = btn.original_text
+                    btn.color = btn.inactive_color
+                    btn.points_val = 0
+
+    def sync_rack_buttons():
+        """Syncs current player's rack with clickable rack buttons."""
+        nonlocal rack_buttons
+        rack_buttons = []
+        player = game.current_player
+        rack_len = len(player.rack)
+        tile_w, tile_h = 45, 45
+        rack_total_w = rack_len * tile_w + (rack_len - 1) * 10
+        rx_start = (screenWidth - rack_total_w) // 2
+        ry = start_y + board_px + 20
+
+        for i, tile in enumerate(player.rack):
+            bx = rx_start + i * (tile_w + 10)
+            btn = Button(bx, ry, tile_w, tile_h, tile.letter, GOLD, WOOD, outlineSize=2, font_size=24, text_color=BLACK)
+            btn.points_val = tile.points
+            if selected_rack_index == i or i in selected_exchange_indices:
+                btn.selected = True
+                btn.color = GOLD
+            else:
+                btn.selected = False
+                btn.color = WOOD
+            rack_buttons.append(btn)
+
+    def update_definition(move_msg):
+        """Updates definition display if a valid word move message is produced."""
+        words = [w.strip() for w in move_msg.split() if w.isalpha() and len(w) >= 2]
+        if words:
+            word = words[0]
+            defn = game.dictionary.get_definition(word)
+            def_text.update_text(f"Definition ({word}): {defn}")
+
+    while running:
+        sync_board_cells()
+        sync_rack_buttons()
+
+        # Update Header Strings
+        turn_text.update(f"Current: {game.current_player.name}")
+        p1_score = game.players[0].score
+        p2_score = game.players[1].score
+        score_text.update(f"Player 1: {p1_score} pts   |   Player 2: {p2_score} pts")
+        bag_text.update(f"Tiles in Bag: {game.tile_bag.remaining_count()}")
+
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                running = False
+                sys.exit()
+
+            # Handle Modal Dialog if active
+            if blank_modal.active:
+                chosen_letter = blank_modal.handle_event(event)
+                if chosen_letter and pending_blank_target:
+                    r, c, idx = pending_blank_target
+                    player = game.current_player
+                    if idx < len(player.rack):
+                        tile = player.rack[idx]
+                        if game.board.place_draft_tile(r, c, tile, assigned_letter=chosen_letter):
+                            feedback_text.update(f"Placed Blank tile as '{chosen_letter}'", BLUE)
+                    pending_blank_target = None
+                    selected_rack_index = None
+                continue
+
+            # Restart & Quit Buttons
+            btn_restart.handle_event(event)
+            if btn_restart.clicked:
+                btn_restart.reset()
+                game = Game(player_names=["Player 1", "Player 2"])
+                selected_rack_index = None
+                selected_exchange_indices.clear()
+                exchange_mode = False
+                feedback_text.update("New game started!", GREEN)
+                def_text.update_text("Definition: ")
+                continue
+
+            btn_quit.handle_event(event)
+            if btn_quit.clicked:
+                running = False
+                sys.exit()
+
+            if game.game_over:
+                continue
+
+            # Action Buttons
+            btn_submit.handle_event(event)
+            if btn_submit.clicked:
+                btn_submit.reset()
+                success, msg, score = game.submit_move()
+                color = GREEN if success else RED
+                feedback_text.update(msg, color)
+                if success:
+                    update_definition(msg)
+                    selected_rack_index = None
+                    selected_exchange_indices.clear()
+                    exchange_mode = False
+                continue
+
+            btn_clear.handle_event(event)
+            if btn_clear.clicked:
+                btn_clear.reset()
+                count = game.recall_draft()
+                selected_rack_index = None
+                feedback_text.update(f"Recalled {count} draft tiles to rack.", BLUE)
+                continue
+
+            btn_exchange.handle_event(event)
+            if btn_exchange.clicked:
+                btn_exchange.reset()
+                if exchange_mode:
+                    # Perform exchange
+                    if selected_exchange_indices:
+                        success, msg = game.exchange_tiles(list(selected_exchange_indices))
+                        color = GREEN if success else RED
+                        feedback_text.update(msg, color)
+                        selected_exchange_indices.clear()
+                        exchange_mode = False
+                        selected_rack_index = None
                     else:
-                        handLetter.y = screenHeight - 60
-                        index = checkWord.find(handLetter.text)
-                        if index != -1:
-                            checkWord = checkWord[:index] + checkWord[index+1:]
-                        handLetter.ready = False
-                    currentWord = "Current Word: " + checkWord
-                    handLetter.reset()
-    # handle board events
-    if skippedTurns < 3:
-        for bordbutton in bord_list:
-            bordbutton.handle_event(event)
-            if bordbutton.clicked and not bordbutton.wordSpace:
-                bordbutton.clicked = False
-                if wordIndex < len(checkWord) > 1 and wordnet.synsets(checkWord.lower()):
-                    bordbutton.wordSpace = True
-                    bordbutton.inactive_color = YELLOW
-                    currentValue = letter_values.get(checkWord[wordIndex], 1)
-                    if bordbutton.text == "2L":
-                        currentValue *= 2
-                    if bordbutton.text == "3L":
-                        currentValue *= 3
-                    totalPoints += currentValue
-                    bordbutton.text = checkWord[wordIndex]
-                    points.update("Points: " + str(totalPoints))
-                    wordIndex += 1
+                        exchange_mode = False
+                        feedback_text.update("Exchange cancelled.", BLUE)
                 else:
-                    if wordnet.synsets(checkWord.lower()):
-                        for index, item in enumerate(letter_list):
-                            if item.ready:
-                                new_letter = GameBasics.Button(item.x, screenHeight - 60, 50, 50, random.choice(string.ascii_uppercase), GREEN, BLACK, 1)
-                                letter_list[index] = new_letter
-                                new_letter.reset()
+                    exchange_mode = True
+                    selected_rack_index = None
+                    selected_exchange_indices.clear()
+                    feedback_text.update("Select rack tiles to exchange, then click Exchange again.", PURPLE)
+                continue
+
+            btn_pass.handle_event(event)
+            if btn_pass.clicked:
+                btn_pass.reset()
+                msg = game.pass_turn()
+                selected_rack_index = None
+                selected_exchange_indices.clear()
+                exchange_mode = False
+                feedback_text.update(msg, RED)
+                continue
+
+            btn_shuffle.handle_event(event)
+            if btn_shuffle.clicked:
+                btn_shuffle.reset()
+                game.shuffle_rack()
+                feedback_text.update("Shuffled rack tiles.", BLUE)
+                continue
+
+            # Rack Tile Selection Handling
+            for i, r_btn in enumerate(rack_buttons):
+                r_btn.handle_event(event)
+                if r_btn.clicked:
+                    r_btn.reset()
+                    if exchange_mode:
+                        if i in selected_exchange_indices:
+                            selected_exchange_indices.remove(i)
+                        else:
+                            selected_exchange_indices.add(i)
                     else:
-                        for item in letter_list:
-                            if item.ready:
-                                item.y = screenHeight - 60
-                                item.ready = False
-                    checkWord = ""
-                    currentWord = "Current Word: " + checkWord
-                    wordIndex = 0
-                    currentValue = 0
-    screen.fill(DARK_GRAY)
-    # show letters
-    Title.render(screen)
-    for letter in letters:
-        letter.render(screen)
-    # show bord
-    for bordbutton in bord_list:
-        bordbutton.draw(screen)
-    # show letters in hand 
-    for handLetter in letter_list:
-        handLetter.draw(screen)
-    if len(checkWord.lower()) > 1 and wordnet.synsets(checkWord.lower()):
-        spellWord.color = WHITE
-        definitionText.update_text(currentDef + get_word_definition(checkWord.lower()))
-    else:
-        spellWord.color = BLACK
-        currentDef = "Definition: "
-        definitionText.update_text(currentDef)
-    # text
-    spellWord.update(currentWord)
-    spellWord.render(screen)
-    definitionText.render(screen)
-    points.render(screen)
-    if skippedTurns == 3:
-        Title.update("End Game")
-    # skip
-    skip_turn.draw(screen)
-    # update
-    pygame.display.flip()
-    pygame.display.update()
-    clock.tick(64)
+                        if selected_rack_index == i:
+                            selected_rack_index = None  # Deselect
+                        else:
+                            selected_rack_index = i
+
+            # Board Cell Click Handling
+            for r in range(grid_size):
+                for c in range(grid_size):
+                    cell_btn = board_cells[r][c]
+                    cell_btn.handle_event(event)
+                    if cell_btn.clicked:
+                        cell_btn.reset()
+                        # If cell has a draft tile, click returns it to rack!
+                        if game.board.draft_tiles[r][c] is not None:
+                            recalled_tile = game.board.remove_draft_tile(r, c)
+                            recalled_tile.assigned_letter = None
+                            feedback_text.update(f"Returned {recalled_tile.letter} to rack.", BLUE)
+                        elif selected_rack_index is not None and not exchange_mode:
+                            player = game.current_player
+                            if selected_rack_index < len(player.rack):
+                                tile = player.rack[selected_rack_index]
+
+                                # If tile is blank, open Blank Modal prompt
+                                if tile.is_blank:
+                                    pending_blank_target = (r, c, selected_rack_index)
+                                    blank_modal.show()
+                                else:
+                                    if game.board.place_draft_tile(r, c, tile):
+                                        selected_rack_index = None
+                                        feedback_text.update(f"Placed '{tile.letter}' at ({r},{c}).", BLUE)
+
+        # RENDER SCREEN
+        screen.fill(SPACE_COLOR)
+
+        # Render Header
+        title_text.render(screen)
+        turn_text.render(screen)
+        score_text.render(screen)
+        bag_text.render(screen)
+
+        # Render Board Grid
+        for r in range(grid_size):
+            for c in range(grid_size):
+                board_cells[r][c].draw(screen)
+
+        # Render Player Rack Tiles
+        for r_btn in rack_buttons:
+            r_btn.draw(screen)
+
+        # Render Action Buttons
+        btn_submit.draw(screen)
+        btn_clear.draw(screen)
+        btn_exchange.draw(screen)
+        btn_pass.draw(screen)
+        btn_shuffle.draw(screen)
+
+        btn_restart.draw(screen)
+        btn_quit.draw(screen)
+
+        # Render Feedback Banner & Word Definition
+        feedback_text.render(screen)
+        def_text.render(screen)
+
+        # Render Game Over Overlay if ended
+        if game.game_over:
+            overlay = pygame.Surface((screenWidth, screenHeight), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            screen.blit(overlay, (0, 0))
+
+            go_box = pygame.Rect(screenWidth // 2 - 250, screenHeight // 2 - 120, 500, 240)
+            pygame.draw.rect(screen, SPACE_COLOR, go_box)
+            pygame.draw.rect(screen, GOLD, go_box, 4)
+
+            go_title = Text("GAME OVER!", 40, RED, (screenWidth // 2, go_box.y + 20))
+            winner_str = f"Winner: {game.winner.name} ({game.winner.score} pts)" if game.winner else "Game Tied!"
+            go_winner = Text(winner_str, 28, GREEN, (screenWidth // 2, go_box.y + 70))
+            go_scores = Text(f"P1: {game.players[0].score} pts  |  P2: {game.players[1].score} pts", 22, BLACK, (screenWidth // 2, go_box.y + 115))
+
+            go_title.render(screen)
+            go_winner.render(screen)
+            go_scores.render(screen)
+
+            btn_restart.x = screenWidth // 2 - 50
+            btn_restart.y = go_box.y + 165
+            btn_restart.draw(screen)
+
+        # Render Blank Selection Modal if open
+        blank_modal.draw(screen)
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
