@@ -49,3 +49,8 @@ artifacts/
 cache/
 deployments/
 typechain-types/
+
+# python bytecode
+__pycache__/
+*.pyc
+

@@ -1,33 +1,53 @@
-# Scrabble
-The code is a Python Scrabble game that uses the Pygame library to create a graphical interface for players to form words and score points.
+# Scrabble Game
 
-[![Static Badge](https://img.shields.io/badge/pygame-black)](https://pypi.org/project/pygame/)
-[![Static Badge](https://img.shields.io/badge/nltk-blue)](https://pypi.org/project/nltk/)
-[![Static Badge](https://img.shields.io/badge/string-blue)](https://pypi.org/project/string/)
-[![Static Badge](https://img.shields.io/badge/random,-purple)](https://pypi.org/project/random,/)
-[![Static Badge](https://img.shields.io/badge/nltk-blue)](https://pypi.org/project/nltk/)
+A complete, feature-rich, playable implementation of standard Scrabble built in Python with Pygame.
 
-## Table of Contents
+## Features & Mechanics
 
-- [About](#about)
-- [Features](#features)
-- [Imports](#Imports)
-- [Rating: 6/10](#Rating)
+- **Standard 15x15 Scrabble Board**: Correct multiplier placement for Triple Word (`3W`), Double Word (`2W`), Triple Letter (`3L`), Double Letter (`2L`), and Center Star (`★`) start square.
+- **100-Tile Bag Distribution**: Standard letter frequency (including 2 Blank `_` wildcard tiles) and letter point values.
+- **Draft vs Locked Board States**: Placed draft tiles are visually distinct (bright yellow) from locked tiles (wooden). Draft tiles can be moved, recalled, or submitted.
+- **Move Validation Engine**:
+  - Checks straight line continuity (horizontal or vertical).
+  - First move must cover the center star (`7, 7`).
+  - Subsequent moves must connect to existing locked tiles on the board.
+  - Validates primary words and all perpendicular cross-words formed.
+- **Scrabble Scoring System**:
+  - Letter multipliers (`2L`, `3L`) and word multipliers (`2W`, `3W`) applied only to newly placed tiles.
+  - Scores all secondary cross-words created during the turn.
+  - 50-point **Bingo Bonus** awarded for placing all 7 rack tiles in a single turn.
+- **Blank Tile Wildcards**: When placing a blank tile (`_`), an interactive modal dialog allows assigning its letter (A-Z). The blank tile scores 0 points while enabling word formation.
+- **Local Pass-and-Play**: 2-player local pass-and-play turn switching with score tracking, rack refilling, tile exchange, turn passing, rack shuffling, and game-end score deductions.
+- **Offline Word Validation**: Bundled with a standard ENABLE1 public-domain English dictionary (`dictionary.txt`) for instant, offline $O(1)$ set lookups without network dependencies or mandatory third-party packages.
+- **Word Definitions**: Integrates optional NLTK WordNet definition lookups when available, displaying definitions for played words.
 
-# About
+## Architecture
 
-The code is a Python Scrabble game that uses the Pygame library to create a graphical interface for players to form words and score points based on letter values and board spaces.
+- `scrabble_engine.py`: Core decoupled Scrabble game engine containing `Tile`, `TileBag`, `Board`, `MoveValidator`, `Scorer`, `Player`, and `Game` state logic.
+- `dictionary.py`: Fast set-based dictionary validator loading from `dictionary.txt` with graceful definition lookups.
+- `dictionary.txt`: Legally usable, public domain ENABLE1 English word list (~83,600+ words).
+- `GameBasics.py`: Pygame UI components (`Text`, `WrapText`, `BordButton`, `Button`, `BlankTileModal`, and color constants).
+- `ScrabbleBord.py`: Main interactive Pygame game launcher and event loop.
+- `test_engine.py`: Comprehensive unit test suite covering tile distributions, rules, validation, multipliers, cross-words, bingo bonus, blank tiles, turns, and game end.
 
-# Features
+## How to Run Unit Tests
 
-The Python Scrabble game built using the Pygame library offers a visually appealing interface for players to interact with. Players form words by placing letter tiles on a board, each with a specific point value. The game board includes special spaces that affect word scores. Players can place, shuffle, exchange, and pass their turns. The game calculates scores based on the letters used in a word, the position of the word on the board, and multipliers from special spaces. It also checks if formed words are valid according to an official Scrabble dictionary, rejecting invalid words. The game manages player turns and rounds, allowing players to take turns forming words. The game continues until the bag of tiles is empty or players decide to end. For more advanced features, consider adding animations, sound effects, and a user-friendly interface. Scrabble is a classic word game that can be both fun and educational. For more Scrabble-related projects, check out the GitHub repository.
+```bash
+python games/scrabble/test_engine.py
+```
 
-# Imports
+## How to Play the Game
 
-pygame, pygame.sprite, nltk, string, random, time, sys, nltk.corpus
+```bash
+python games/scrabble/ScrabbleBord.py
+```
 
-# Rating
-
-The code provides a functional implementation of a Scrabble-like game using Pygame, featuring features such as letter display, board placement, and point calculation. It is modularized into separate sections for handling game logic, UI rendering, and event handling, promoting code organization and reusability. The UI design uses Pygame's capabilities to create a visually appealing game interface with colorful buttons and text elements. The code implements basic Scrabble rules, adding depth and authenticity to the gameplay experience.
-However, the code could benefit from simplification and refactoring, especially in areas with nested loops and conditionals. Implementing robust error handling mechanisms can enhance the stability and user experience of the game. The code lacks inline comments or documentation explaining the purpose of each function, class, or section of code, which could help other developers understand the codebase more easily.
-Scalability challenges may arise due to the current design, as the game grows in complexity or additional features are added. To improve, the code should be refactored into smaller, more manageable functions or methods, improve error handling, document the codebase, evaluate the code for scalability, and optimize performance by identifying bottlenecks or inefficient code patterns. This will help maintain and extend the codebase without significant refactoring.
+### Controls:
+- **Place Tile**: Click a tile on your rack, then click an empty square on the board.
+- **Remove Draft Tile**: Click a draft tile on the board to return it to your rack.
+- **Submit**: Submits placed tiles, validates words, adds score, and advances turn.
+- **Recall**: Returns all draft tiles from the board to your rack.
+- **Exchange**: Select rack tiles, then click Exchange to swap them with the tile bag.
+- **Pass**: Passes your turn.
+- **Shuffle**: Randomizes your rack tiles.
+- **Restart / Quit**: Top right action buttons to start a new game or exit.
