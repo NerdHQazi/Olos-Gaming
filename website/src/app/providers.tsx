@@ -10,8 +10,8 @@ const queryClient = new QueryClient();
 createAppKit({
   adapters: [wagmiAdapter],
   projectId: projectId!,
-  networks,                      // [sepolia] only
-  defaultNetwork: networks[0],   // always opens on Sepolia
+  networks,
+  defaultNetwork: networks[0],
   metadata: {
     name: "OLOS Gaming",
     description: "Play, Complete, Win — skill-based 1v1 gaming",
@@ -28,7 +28,7 @@ createAppKit({
     "--w3m-accent": "#3B82F6",
     "--w3m-border-radius-master": "8px",
   },
-  allowUnsupportedChain: false,  // blocks wrong networks
+  allowUnsupportedChain: false,
 });
 
 interface ProvidersProps {

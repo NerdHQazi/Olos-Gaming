@@ -45,7 +45,7 @@ export default function AuthScreen() {
     confirmPassword: ''
   });
 
-  const API_BASE_URL = '/api';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
   const handleGoogleSignIn = async () => {
     setOauthLoading(true);
@@ -103,7 +103,7 @@ export default function AuthScreen() {
     if (allFilled && passwordsMatch) {
       setIsLoading(true);
       try {
-        const endpoint = isSignUp ? '/auth/signup' : '/auth/login';
+        const endpoint = isSignUp ? '/api/auth/signup' : '/api/auth/login';
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
           method: 'POST',
           headers: {
@@ -180,19 +180,17 @@ export default function AuthScreen() {
   // Redirect if already logged in
   React.useEffect(() => {
     if (!isAuthLoading && isLoggedIn) {
-      router.push('/');
+      router.replace('/');
     }
   }, [isLoggedIn, isAuthLoading, router]);
 
-  if (isAuthLoading) {
+  if (isAuthLoading || isLoggedIn) {
     return (
       <div className="min-h-screen bg-[#050B18] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-olos-blue/30 border-t-olos-blue rounded-full animate-spin" />
       </div>
     );
   }
-
-  if (isLoggedIn) return null;
   
   return (
     <div className="min-h-screen bg-[#050B18] text-white selection:bg-olos-blue/30 overflow-y-auto pb-12">
