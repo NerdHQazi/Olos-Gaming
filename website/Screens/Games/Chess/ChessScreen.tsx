@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Matchmaking from "@/components/Matchmaking";
+import { useAuth } from "@/context/AuthContext";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SQ = 68; // square size in px
@@ -177,6 +178,7 @@ function aiMove(board: Board): [Sq, Sq] | null {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function ChessScreen() {
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") || "Solo";
   const matchIdParam = searchParams.get("matchId");
@@ -202,8 +204,7 @@ export default function ChessScreen() {
   turnRef.current = turn;
 
   const fetchMatchState = useCallback(async () => {
-    if (!matchId) return;
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!matchId || !user?.id) return;
     const { data } = await supabase.from('matches').select('*').eq('id', matchId).single();
     if (data && user) {
       if (data.board_state) setBoard(data.board_state);
@@ -215,7 +216,7 @@ export default function ChessScreen() {
       const oppId = data.player1_id === user.id ? data.player2_id : data.player1_id;
       setOpponent({ id: oppId, username: `Challenger ${oppId.slice(0, 5)}` });
     }
-  }, [matchId]);
+  }, [matchId, user?.id]);
 
   useEffect(() => {
     if (mode === '1v1' && matchId) {
@@ -349,9 +350,15 @@ export default function ChessScreen() {
   }, [turn, status, checkEndgame, mode]);
 
   const handleClick = async (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (status !== "playing" || aiThinking) return;
-    if (mode === '1v1' && turn !== playerColor) return;
-    if (mode === 'Solo' && turn !== "w") return;
+    if (status !== "playing" || aiThinking) {
+      return;
+    }
+    if (mode === '1v1' && turn !== playerColor) {
+      return;
+    }
+    if (mode === 'Solo' && turn !== "w") {
+      return;
+    }
 
     const rect = canvasRef.current!.getBoundingClientRect();
     const scaleX = W / rect.width;
@@ -375,10 +382,9 @@ export default function ChessScreen() {
         const nb = applyMove(b, selected, [r, c]);
         
         if (mode === '1v1') {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user && matchId) {
+          if (user?.id && matchId) {
              const isFinished = checkEndgame(nb, opp(playerColor));
-             await supabase.rpc('perform_game_move', {
+             const { error: moveError } = await supabase.rpc('perform_game_move', {
                p_match_id: matchId,
                p_player_id: user.id,
                p_move_data: { 
@@ -388,6 +394,14 @@ export default function ChessScreen() {
                  status: isFinished ? 'finished' : 'active'
                }
              });
+             if (moveError) {
+               console.error('[Chess] perform_game_move failed:', moveError.message);
+             }
+          } else {
+            console.error('[Chess] move submit skipped: missing user or match', {
+              hasUser: !!user?.id,
+              matchId,
+            });
           }
         } else {
           setBoard(nb);

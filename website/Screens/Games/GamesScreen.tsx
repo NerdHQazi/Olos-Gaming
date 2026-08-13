@@ -165,11 +165,38 @@ export default function GamesScreen() {
   const [matchmakingActive, setMatchmakingActive] = useState(false);
   const [activeStake, setActiveStake] = useState(0);
 
+  const logAudit = (event: string, extra: Record<string, unknown> = {}) => {
+    const entry = {
+      ts: new Date().toISOString(),
+      event,
+      game: selectedGameForStake?.slug ?? null,
+      stake: activeStake,
+      matchmakingActive,
+      ...extra,
+    };
+
+    try {
+      if (typeof window !== 'undefined') {
+        const w = window as any;
+        if (!Array.isArray(w.__MM_AUDIT_LOGS)) {
+          w.__MM_AUDIT_LOGS = [];
+        }
+        w.__MM_AUDIT_LOGS.push(entry);
+      }
+    } catch {
+      // no-op
+    }
+
+    console.log('[MM_AUDIT]', entry);
+  };
+
   const handleSelect1v1 = (game: Game) => {
     if (!isLoggedIn) {
+      logAudit('games.1v1_click_redirect_auth', { clickedGame: game.slug });
       router.push("/auth");
       return;
     }
+    logAudit('games.1v1_click_open_stake', { clickedGame: game.slug });
     setSelectedGameForStake(game);
   };
 
@@ -178,16 +205,17 @@ export default function GamesScreen() {
   );
 
   const handleStartMatch = (stake: number) => {
+    logAudit('games.start_match_click', { selectedStake: stake });
     setActiveStake(stake);
     setMatchmakingActive(true);
   };
 
   const handleMatchmakingComplete = (mId: string) => {
+    logAudit('games.matchmaking_complete', { completedMatchId: mId });
     alert(`Game starting now for ${selectedGameForStake?.title}!`);
+    logAudit('games.redirect_to_board', { url: `/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}` });
     location.href = `/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}`;
   };
-
-  console.log("[GamesScreen] State:", { matchmakingActive, selectedGame: selectedGameForStake?.slug });
 
   return (
     <main className="min-h-screen bg-[#0B1121] text-white">

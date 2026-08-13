@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useWallet } from "@/context/WalletContext";
 import { useAuth } from "@/context/AuthContext";
@@ -29,7 +29,40 @@ export default function Matchmaking({
 }: MatchmakingProps) {
   const { user, isLoading: authLoading } = useAuth();
   const { balance, refreshBalance } = useWallet();
-  console.log("[Matchmaking] Component Rendered", { game: game.slug, stake });
+
+  const timelineSeqRef = useRef(0);
+  const instanceIdRef = useRef(Math.random().toString(36).slice(2, 10));
+
+  const logAudit = (event: string, extra: Record<string, unknown> = {}) => {
+    timelineSeqRef.current += 1;
+    const entry = {
+      ts: new Date().toISOString(),
+      seq: timelineSeqRef.current,
+      instanceId: instanceIdRef.current,
+      event,
+      userId: user?.id ?? null,
+      matchId: matchId ?? null,
+      state: stateRef.current,
+      playerReady,
+      opponentReady,
+      ...extra,
+    };
+
+    try {
+      if (typeof window !== 'undefined') {
+        const w = window as any;
+        if (!Array.isArray(w.__MM_AUDIT_LOGS)) {
+          w.__MM_AUDIT_LOGS = [];
+        }
+        w.__MM_AUDIT_LOGS.push(entry);
+      }
+    } catch {
+      // no-op
+    }
+
+    console.log('[MM_AUDIT]', entry);
+  };
+
   const [state, setState] = useState<MatchmakingState>("SEARCHING");
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(10);
@@ -37,6 +70,117 @@ export default function Matchmaking({
   const [opponent, setOpponent] = useState<{ id: string; username: string } | null>(null);
   const [playerReady, setPlayerReady] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
+  const stateRef = useRef<MatchmakingState>("SEARCHING");
+  const startupInFlightRef = useRef(false);
+  const startupGenerationRef = useRef(0);
+  const activeStartupGenerationRef = useRef<number | null>(null);
+
+  const invokeRpc = async <T,>(
+    fnName: string,
+    payload: Record<string, unknown>,
+    timeoutMs: number
+  ): Promise<{ data: T | null; error: Error | null; status?: number }> => {
+    logAudit('rpc.start', { fnName, payload, timeoutMs });
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      logAudit('rpc.config_missing', { fnName });
+      return { data: null, error: new Error('Supabase config missing') };
+    }
+
+    let accessToken: string | null = null;
+
+    try {
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('getSession timeout')), 1500);
+        }),
+      ]);
+
+      accessToken = (sessionResult as any)?.data?.session?.access_token || null;
+    } catch {
+      // Fallback to locally persisted auth state when SDK session retrieval stalls.
+      try {
+        const rawSession = localStorage.getItem('olos_session');
+        const parsedSession = rawSession ? JSON.parse(rawSession) : null;
+        accessToken = parsedSession?.access_token || null;
+      } catch {
+        accessToken = null;
+      }
+    }
+
+    if (!accessToken) {
+      logAudit('rpc.no_auth_session', { fnName });
+      return { data: null, error: new Error('No active auth session') };
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${fnName}`, {
+        method: 'POST',
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      const responseText = await response.text();
+      const parsed = responseText ? JSON.parse(responseText) : null;
+
+      if (!response.ok) {
+        logAudit('rpc.http_error', { fnName, status: response.status, parsed });
+        return {
+          data: null,
+          error: new Error(parsed?.message || `RPC ${fnName} failed with ${response.status}`),
+          status: response.status,
+        };
+      }
+
+      logAudit('rpc.success', { fnName, status: response.status, parsed });
+
+      return { data: parsed as T, error: null, status: response.status };
+    } catch (rpcErr: any) {
+      logAudit('rpc.exception', {
+        fnName,
+        errorName: rpcErr?.name || null,
+        message: rpcErr?.message || `${fnName} request failed`,
+      });
+      return {
+        data: null,
+        error: new Error(rpcErr?.name === 'AbortError' ? `${fnName} timed out after ${timeoutMs}ms` : (rpcErr?.message || `${fnName} request failed`)),
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  useEffect(() => {
+    stateRef.current = state;
+    logAudit('state.transition', { nextState: state });
+  }, [state]);
+
+  useEffect(() => {
+    logAudit('state.ready_flags', { playerReady, opponentReady });
+  }, [playerReady, opponentReady]);
+
+  useEffect(() => {
+    logAudit('state.match_id', { nextMatchId: matchId });
+  }, [matchId]);
+
+  useEffect(() => {
+    logAudit('lifecycle.mount');
+    return () => {
+      logAudit('lifecycle.unmount');
+    };
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -45,57 +189,149 @@ export default function Matchmaking({
       console.warn("[Matchmaking] No user found - is the user logged in?");
       setError("You must be logged in to play 1v1");
     } else {
-      console.log("[Matchmaking] User validated from context:", user.id);
     }
   }, [user, authLoading]);
 
   useEffect(() => {
-    console.log("[Matchmaking] Effect trigger, user state:", user?.id || "null");
-    if (!user) return;
+    logAudit('effect.matchmaking.entry', {
+      authLoading,
+      hasUser: !!user?.id,
+      game: game.slug,
+      stake,
+    });
+
+    if (authLoading) return;
+
+    const userId = user?.id;
+    if (!userId) {
+      logAudit('auth.missing_user', { authLoading });
+      setError("Authentication not ready. Please return and retry matchmaking.");
+      return;
+    }
 
     let channel: any;
+    let searchingPoll: ReturnType<typeof setInterval> | null = null;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    let initialHandshakeCompleted = false;
+
+    const isActiveGeneration = (generation: number) => {
+      return activeStartupGenerationRef.current === generation;
+    };
 
     const startMatchmaking = async () => {
-      if (state !== "SEARCHING") return;
+      if (stateRef.current !== "SEARCHING" || startupInFlightRef.current) {
+        logAudit('startup.startMatchmaking.blocked', {
+          startupInFlight: startupInFlightRef.current,
+          stateAtBlock: stateRef.current,
+        });
+        return;
+      }
+
+      const generation = startupGenerationRef.current + 1;
+      startupGenerationRef.current = generation;
+      activeStartupGenerationRef.current = generation;
+
+      logAudit('startup.startMatchmaking.invoked', {
+        startupInFlight: startupInFlightRef.current,
+        stateAtInvoke: stateRef.current,
+        generation,
+      });
+
+      startupInFlightRef.current = true;
+      logAudit('startup.inflight.set_true', { generation });
       
-      console.log(`[Matchmaking] Starting for ${game.slug}, user: ${user.id}`);
+      logAudit('matchmaking.start', { game: game.slug, stake, balance, generation });
       setError(null);
 
-      // 1. Subscribe to Realtime FIRST
-      subscribeToMatches(user.id);
+      // Fail fast instead of leaving the player in an infinite searching state.
+      timeoutHandle = setTimeout(() => {
+        if (!initialHandshakeCompleted && stateRef.current === "SEARCHING") {
+          console.error("[Matchmaking] Startup timeout while searching");
+          logAudit('matchmaking.startup_timeout', { handshakeCompleted: initialHandshakeCompleted, generation });
+          setError("Matchmaking timed out. Please try again.");
+        }
+      }, 15000);
 
       // 2. Call RPC (Postgres Function)
       try {
-        console.log(`[Matchmaking] Invoking find_opponent RPC...`);
-        const { data, error: rpcError } = await supabase.rpc('find_opponent', {
-          p_user_id: user.id,
-          p_game_type: game.slug,
-          p_stake_amount: stake
-        });
+        // Defensive dedupe: clear stale queue row, but do not block matchmaking startup on it.
+        try {
+          const { error: cancelPreflightError } = await invokeRpc<any>(
+            'cancel_matchmaking',
+            { p_user_id: userId },
+            3000
+          );
+
+          if (cancelPreflightError) {
+            throw cancelPreflightError;
+          }
+          logAudit('matchmaking.preflight_cancel.ok', { generation });
+        } catch (cancelErr: any) {
+          console.warn('[Matchmaking] cancel_matchmaking preflight skipped:', cancelErr?.message || cancelErr);
+          logAudit('matchmaking.preflight_cancel.skip', { message: cancelErr?.message || String(cancelErr), generation });
+        }
+
+        if (!isActiveGeneration(generation)) {
+          logAudit('startup.generation.stale_after_cancel', { generation, activeGeneration: activeStartupGenerationRef.current });
+          return;
+        }
+
+        const { data, error: rpcError } = await invokeRpc<any>(
+          'find_opponent',
+          {
+            p_user_id: userId,
+            p_game_type: game.slug,
+            p_stake_amount: stake
+          },
+          12000
+        );
 
         if (rpcError) throw rpcError;
+
+        if (!isActiveGeneration(generation)) {
+          logAudit('startup.generation.stale_after_find', { generation, activeGeneration: activeStartupGenerationRef.current });
+          return;
+        }
+
+        initialHandshakeCompleted = true;
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+          timeoutHandle = null;
+        }
         
-        console.log(`[Matchmaking] RPC response:`, data);
+        logAudit('matchmaking.find_opponent.response', { data, generation });
 
         if (data.status === 'matched') {
-          console.log(`[Matchmaking] Instant match! ID: ${data.match_id}`);
           setMatchId(data.match_id);
           setState("FOUND");
-          fetchMatchDetails(data.match_id, user.id);
+          fetchMatchDetails(data.match_id, userId);
         } else if (data.status === 'searching') {
-          console.log(`[Matchmaking] No instant match, waiting in queue...`);
+          logAudit('matchmaking.searching_queued');
         } else if (data.error) {
           throw new Error(data.error);
         }
       } catch (err: any) {
+        if (!isActiveGeneration(generation)) {
+          logAudit('startup.generation.stale_error_ignored', { generation, activeGeneration: activeStartupGenerationRef.current });
+          return;
+        }
         console.error("[Matchmaking] Init Error:", err.message);
+        logAudit('matchmaking.start.error', { message: err.message, generation });
         // Explicitly handle "Insufficient balance" with the back button we added
         setError(err.message);
+      } finally {
+        if (isActiveGeneration(generation)) {
+          logAudit('matchmaking.start.finally', { generation });
+          startupInFlightRef.current = false;
+          activeStartupGenerationRef.current = null;
+          logAudit('startup.inflight.reset', { source: 'startMatchmaking.finally', generation });
+        } else {
+          logAudit('startup.inflight.reset.skip_stale', { generation, activeGeneration: activeStartupGenerationRef.current });
+        }
       }
     };
 
     const subscribeToMatches = (userId: string) => {
-      console.log(`[Matchmaking] Subscribing to matches for user: ${userId}`);
       channel = supabase
         .channel(`matchmaking:${userId}`)
         .on('postgres_changes', { 
@@ -103,26 +339,64 @@ export default function Matchmaking({
           schema: 'public', 
           table: 'matches'
         }, (payload) => {
-          console.log(`[Matchmaking] New match event received!`, payload.new);
+          logAudit('realtime.matches.insert', {
+            payloadMatchId: payload.new?.id ?? null,
+            payloadPlayer1: payload.new?.player1_id ?? null,
+            payloadPlayer2: payload.new?.player2_id ?? null,
+          });
           // Check if we are part of this new match
           if (payload.new.player1_id === userId || payload.new.player2_id === userId) {
-            console.log(`[Matchmaking] Match confirmed via Realtime!`);
+            logAudit('realtime.matches.accepted', { acceptedMatchId: payload.new?.id ?? null });
             handleMatchFound(payload.new, userId);
           }
         })
         .subscribe((status) => {
-          console.log(`[Matchmaking] Subscription status: ${status}`);
+          logAudit('realtime.matches.status', { status });
         });
     };
 
     const handleMatchFound = (match: any, userId: string) => {
+      logAudit('match.found', {
+        foundMatchId: match?.id ?? null,
+        player1: match?.player1_id ?? null,
+        player2: match?.player2_id ?? null,
+      });
       setMatchId(match.id);
       setState("FOUND");
       fetchMatchDetails(match.id, userId);
     };
 
+    const pollForExistingMatch = async () => {
+      if (stateRef.current !== "SEARCHING") return;
+
+      const threshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: matchData, error: matchPollError } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('status', 'active')
+        .eq('game_type', game.slug)
+        .eq('stake_amount', stake)
+        .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
+        .gte('created_at', threshold)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (matchPollError) {
+        console.error('[Matchmaking] Match poll failed:', matchPollError.message);
+        logAudit('poll.match.error', { message: matchPollError.message });
+        return;
+      }
+
+      if (matchData) {
+        logAudit('poll.match.found', { pollMatchId: matchData.id });
+        handleMatchFound(matchData, userId);
+      } else {
+        logAudit('poll.match.none');
+      }
+    };
+
     const fetchMatchDetails = async (id: string, userId: string) => {
-      console.log(`[Matchmaking] Fetching details for match: ${id}`);
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
         .select('*')
@@ -131,7 +405,6 @@ export default function Matchmaking({
       
       if (matchData) {
         const opponentId = matchData.player1_id === userId ? matchData.player2_id : matchData.player1_id;
-        console.log(`[Matchmaking] Opponent identified: ${opponentId}`);
         
         // Fetch opponent profile
         const { data: profileData } = await supabase
@@ -144,62 +417,122 @@ export default function Matchmaking({
           id: opponentId, 
           username: profileData?.username || `Challenger ${opponentId.slice(0, 5)}` 
         });
+        logAudit('match.details.loaded', {
+          detailMatchId: matchData.id,
+          player1: matchData.player1_id,
+          player2: matchData.player2_id,
+          status: matchData.status,
+        });
       } else if (matchError) {
         console.error(`[Matchmaking] Detail fetch failed:`, matchError.message);
+        logAudit('match.details.error', { message: matchError.message });
       }
     };
 
-    startMatchmaking();
+    // Subscribe per effect run so StrictMode effect re-runs keep realtime attached
+    // even when startup is already owned by an in-flight generation.
+    subscribeToMatches(userId);
+    void startMatchmaking();
+    searchingPoll = setInterval(pollForExistingMatch, 1200);
 
     const handleUnload = () => {
-      if (user && state === "SEARCHING") {
-        supabase.rpc("cancel_matchmaking", { p_user_id: user.id });
+      if (userId && stateRef.current === "SEARCHING") {
+        logAudit('lifecycle.beforeunload_cancel');
+        supabase.rpc("cancel_matchmaking", { p_user_id: userId });
       }
     };
 
     window.addEventListener("beforeunload", handleUnload);
 
     return () => {
+      logAudit('effect.matchmaking.cleanup');
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
       window.removeEventListener("beforeunload", handleUnload);
       if (channel) {
-        console.log(`[Matchmaking] Cleaning up channel`);
+        logAudit('lifecycle.cleanup.remove_matchmaking_channel');
         supabase.removeChannel(channel);
       }
-      // Cleanup: Refund if unmounting during SEARCHING
-      if (user && state === "SEARCHING") {
-        supabase.rpc('cancel_matchmaking', { p_user_id: user.id });
+      if (searchingPoll) {
+        clearInterval(searchingPoll);
+        logAudit('lifecycle.cleanup.stop_match_poll');
       }
     };
-  }, [game.slug, stake, user, state]);
+  }, [authLoading, game.slug, stake, user?.id]);
 
   const handleCancel = async () => {
-    console.log("[Matchmaking] Cancelling search...");
-    if (user) {
-      await supabase.rpc('cancel_matchmaking', { p_user_id: user.id });
-      await refreshBalance(); // Update UI immediately
-    }
+    logAudit('ui.cancel_clicked');
+    // Exit the screen immediately to avoid trapping users behind a stuck RPC.
     onCancel();
+
+    if (user) {
+      try {
+        const { error: cancelError } = await invokeRpc<any>('cancel_matchmaking', { p_user_id: user.id }, 3000);
+        if (cancelError) {
+          throw cancelError;
+        }
+        logAudit('ui.cancel_rpc.ok');
+        await refreshBalance();
+      } catch (cancelError: any) {
+        console.error('[Matchmaking] Cancel RPC failed:', cancelError?.message || cancelError);
+        logAudit('ui.cancel_rpc.error', { message: cancelError?.message || String(cancelError) });
+      }
+    }
   };
 
   // Subscribe to match events for "Ready" status
   useEffect(() => {
     if (!matchId || !user) return;
 
-    console.log(`[Matchmaking] Listening for ready events in match: ${matchId}`);
-    
-    // Check if opponent is ALREADY ready
-    supabase
-      .from('match_events')
-      .select('player_id')
-      .eq('match_id', matchId)
-      .eq('event_type', 'ready')
-      .neq('player_id', user.id)
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          console.log(`[Matchmaking] Opponent was already ready!`);
-          setOpponentReady(true);
+    const syncReadyFromEvents = async () => {
+      const { data, error: readyFetchError } = await supabase
+        .from('match_events')
+        .select('player_id')
+        .eq('match_id', matchId)
+        .eq('event_type', 'ready');
+
+      if (readyFetchError) {
+        console.error('[Matchmaking] Ready sync failed:', readyFetchError.message);
+        logAudit('ready.sync.error', { message: readyFetchError.message });
+        return;
+      }
+
+      const readyIds = new Set((data || []).map((row: any) => row.player_id));
+      let iAmReady = readyIds.has(user.id);
+      let oppReady = [...readyIds].some((id) => id !== user.id);
+
+      // Fallback for occasional client-side desync: ask DB authority if both players are ready.
+      if (!iAmReady || !oppReady) {
+        const { data: bothReady, error: bothReadyError } = await supabase.rpc('are_both_players_ready', {
+          p_match_id: matchId,
+        });
+
+        if (bothReadyError) {
+          console.error('[Matchmaking] Authoritative ready check failed:', bothReadyError.message);
+          logAudit('ready.authoritative.error', { message: bothReadyError.message });
+        } else if (bothReady) {
+          iAmReady = true;
+          oppReady = true;
+          logAudit('ready.authoritative.true');
         }
+      }
+
+      logAudit('ready.sync.result', {
+        readyIds: [...readyIds],
+        iAmReady,
+        oppReady,
       });
+
+      setPlayerReady(iAmReady);
+      setOpponentReady(oppReady);
+
+      if ((stateRef.current === 'FOUND' || stateRef.current === 'WAITING') && iAmReady) {
+        setState('WAITING');
+      }
+    };
+
+    syncReadyFromEvents();
 
     const channel = supabase
       .channel(`match_events:${matchId}`)
@@ -209,34 +542,30 @@ export default function Matchmaking({
         table: 'match_events',
         filter: `match_id=eq.${matchId}`
       }, (payload) => {
-        console.log(`[Matchmaking] Match event: ${payload.new.event_type}`);
+        logAudit('realtime.match_events.insert', {
+          eventType: payload.new?.event_type ?? null,
+          eventPlayerId: payload.new?.player_id ?? null,
+          eventMatchId: payload.new?.match_id ?? null,
+        });
         if (payload.new.event_type === 'ready') {
-          if (payload.new.player_id !== user.id) {
-            console.log(`[Matchmaking] Opponent is ready!`);
-            setOpponentReady(true);
-          }
-        }
-      })
-      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        console.log("[Matchmaking] Someone left:", leftPresences);
-        // If we were in a match-related state and someone leaves, we return to search
-        if (state !== "SEARCHING") {
-          console.warn("[Matchmaking] Opponent disconnected! Returning to search...");
-          setMatchId(null);
-          setOpponent(null);
-          setPlayerReady(false);
-          setOpponentReady(false);
-          setState("SEARCHING");
+          syncReadyFromEvents();
         }
       })
       .subscribe(async (status) => {
+        logAudit('realtime.match_events.status', { status });
         if (status === 'SUBSCRIBED') {
-          console.log("[Matchmaking] Subscribed to match events, tracking presence...");
           await channel.track({ user_id: user.id, online_at: new Date().toISOString() });
         }
       });
 
+    const readyPoll = setInterval(() => {
+      if (stateRef.current === 'FOUND' || stateRef.current === 'WAITING') {
+        syncReadyFromEvents();
+      }
+    }, 1500);
+
     return () => {
+      clearInterval(readyPoll);
       supabase.removeChannel(channel);
     };
   }, [matchId, user]);
@@ -260,6 +589,12 @@ export default function Matchmaking({
           const elapsed = Math.floor((now - startTime) / 1000);
           setCountdown(Math.max(1, 10 - elapsed));
         }
+        logAudit('countdown.start', {
+          countdown,
+          playerReady,
+          opponentReady,
+          matchId,
+        });
         setState("COUNTDOWN");
       };
       
@@ -272,25 +607,70 @@ export default function Matchmaking({
     if (state !== "COUNTDOWN") return;
 
     if (countdown > 0) {
+      logAudit('countdown.tick', { countdown });
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
     } else {
+      logAudit('countdown.complete_onComplete', { matchId });
       onComplete?.(matchId!);
     }
   }, [state, countdown, onComplete, matchId]);
 
   const handleReady = async () => {
-    if (!user || !matchId) return;
+    if (!user) return;
+
+    let effectiveMatchId = matchId;
+
+    // Recover from occasional FOUND-state desync where matchId was not set in client state.
+    if (!effectiveMatchId) {
+      const threshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: fallbackMatch, error: fallbackError } = await supabase
+        .from('matches')
+        .select('id')
+        .eq('status', 'active')
+        .eq('game_type', game.slug)
+        .eq('stake_amount', stake)
+        .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
+        .gte('created_at', threshold)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackError) {
+        console.error('[Matchmaking] Ready fallback match lookup failed:', fallbackError.message);
+        logAudit('ready.fallback.error', { message: fallbackError.message });
+        setError('Could not resolve active match. Please retry.');
+        return;
+      }
+
+      if (!fallbackMatch?.id) {
+        console.error('[Matchmaking] Ready fallback found no active match for user');
+        logAudit('ready.fallback.none');
+        setError('No active match found. Please retry matchmaking.');
+        return;
+      }
+
+      effectiveMatchId = fallbackMatch.id;
+      setMatchId(fallbackMatch.id);
+    }
 
     // Send "ready" event
-    await supabase.from('match_events').insert({
-      match_id: matchId,
+    const { error: readyError } = await supabase.from('match_events').insert({
+      match_id: effectiveMatchId,
       player_id: user.id,
       event_type: 'ready'
     });
 
+    if (readyError) {
+      console.error('[Matchmaking] Ready insert failed:', readyError.message);
+      logAudit('ready.insert.error', { message: readyError.message });
+      setError(readyError.message);
+      return;
+    }
+
     setPlayerReady(true);
     setState("WAITING");
+    logAudit('ready.insert.ok', { effectiveMatchId });
     onReady?.();
   };
 
@@ -411,6 +791,7 @@ export default function Matchmaking({
             )}
             {state === "FOUND" && (
               <button
+                data-testid="ready-button"
                 onClick={handleReady}
                 className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-black transition-all active:scale-95 shadow-[0_0_20px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2"
               >
