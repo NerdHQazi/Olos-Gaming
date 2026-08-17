@@ -7,6 +7,10 @@ import StakeSelection from "@/components/StakeSelection";
 import Matchmaking from "@/components/Matchmaking";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
+// PvS is only wired up for the turn-based games with a System move selector (see Phase 3 audit).
+const PVS_GAME_SLUGS = ["chess", "checkers"];
 
 type FilterType = "All" | "Solo" | "1v1";
 
@@ -74,10 +78,12 @@ const FILTERS: FilterType[] = ["All", "Solo", "1v1"];
 
 function GameCard({ 
   game, 
-  onSelect1v1 
+  onSelect1v1,
+  onSelectSystem
 }: { 
   game: Game;
   onSelect1v1: (game: Game) => void;
+  onSelectSystem: (game: Game) => void;
 }) {
   return (
     <div className="group flex flex-col bg-[#0d1326] rounded-2xl border border-white/[0.07] overflow-hidden hover:border-blue-500/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-950/50">
@@ -134,6 +140,14 @@ function GameCard({
               >
                 1v1 Match
               </button>
+              {PVS_GAME_SLUGS.includes(game.slug) && (
+                <button
+                  onClick={() => onSelectSystem(game)}
+                  className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-purple-500/20 hover:border-purple-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
+                >
+                  vs System
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -158,12 +172,15 @@ function GameCard({
 }
 
 export default function GamesScreen() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const router = useRouter();
   const [filter, setFilter] = useState<FilterType>("All");
   const [selectedGameForStake, setSelectedGameForStake] = useState<Game | null>(null);
   const [matchmakingActive, setMatchmakingActive] = useState(false);
   const [activeStake, setActiveStake] = useState(0);
+  const [systemGameForStake, setSystemGameForStake] = useState<Game | null>(null);
+  const [startingSystemMatch, setStartingSystemMatch] = useState(false);
+  const [systemMatchError, setSystemMatchError] = useState<string | null>(null);
 
   const logAudit = (event: string, extra: Record<string, unknown> = {}) => {
     const entry = {
@@ -217,6 +234,34 @@ export default function GamesScreen() {
     location.href = `/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}`;
   };
 
+  const handleSelectSystem = (game: Game) => {
+    if (!isLoggedIn) {
+      router.push("/auth");
+      return;
+    }
+    setSystemMatchError(null);
+    setSystemGameForStake(game);
+  };
+
+  const handleStartSystemMatch = async (stake: number) => {
+    if (!systemGameForStake || !user) return;
+    setStartingSystemMatch(true);
+    setSystemMatchError(null);
+    try {
+      const { data, error } = await supabase.rpc("start_system_match", {
+        p_user_id: user.id,
+        p_game_type: systemGameForStake.slug,
+        p_stake_amount: stake,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      location.href = `/games/${systemGameForStake.slug}?mode=1v1&stake=${stake}&matchId=${data.match_id}`;
+    } catch (err) {
+      setSystemMatchError(err instanceof Error ? err.message : "Could not start match vs System");
+      setStartingSystemMatch(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#0B1121] text-white">
       <Navbar />
@@ -232,6 +277,28 @@ export default function GamesScreen() {
               onCancel={() => setMatchmakingActive(false)}
               onComplete={handleMatchmakingComplete}
             />
+          </div>
+        ) : systemGameForStake ? (
+          <div className="flex flex-col items-center animate-fade-in">
+            <div className="w-full max-w-[560px] mb-8">
+              <button
+                onClick={() => setSystemGameForStake(null)}
+                className="text-gray-500 hover:text-white transition-colors text-sm font-bold flex items-center gap-2"
+              >
+                <span>←</span> Back to Games
+              </button>
+            </div>
+            {systemMatchError && (
+              <p className="w-full max-w-[560px] mb-4 text-red-400 text-sm font-bold">{systemMatchError}</p>
+            )}
+            <StakeSelection
+              game={systemGameForStake}
+              onBack={() => setSystemGameForStake(null)}
+              onStart={handleStartSystemMatch}
+            />
+            {startingSystemMatch && (
+              <p className="mt-4 text-gray-400 text-sm font-bold">Starting match vs System…</p>
+            )}
           </div>
         ) : selectedGameForStake ? (
           <div className="flex flex-col items-center animate-fade-in">
@@ -322,6 +389,7 @@ export default function GamesScreen() {
                   key={game.slug} 
                   game={game} 
                   onSelect1v1={handleSelect1v1}
+                  onSelectSystem={handleSelectSystem}
                 />
               ))}
             </div>
