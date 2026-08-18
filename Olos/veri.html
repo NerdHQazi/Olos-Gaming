@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OLOS - Two-Factor Authentication</title>
+  <link rel="stylesheet" href="veri.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- NAVBAR WITH STEP WIZARD -->
+  <header class="navbar">
+    <a href="#" class="logo-text">OLOS</a>
+    
+    <!-- Onboarding Progress Wizard -->
+    <div class="step-wizard">
+      <div class="step completed">1</div>
+      <div class="step completed">2</div>
+      <div class="step completed">3</div>
+      <div class="step active">
+        <span class="step-num">4</span>
+        <span class="step-label">SECURITY</span>
+      </div>
+      <div class="step">5</div>
+    </div>
+
+    <button class="btn-text">SIGN UP</button>
+  </header>
+
+  <!-- MAIN SECURITY SETUP CARD -->
+  <main class="main-container">
+    <div class="security-card">
+      
+      <!-- Top Shield Icon & Badge -->
+      <div class="security-icon-wrapper">
+        <div class="shield-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="m9 12 2 2 4-4"></path>
+          </svg>
+        </div>
+      </div>
+      <span class="badge-text">SECURITY SETUP</span>
+
+      <!-- Title & Subtitle -->
+      <h1 class="card-title">Two-Factor Authentication</h1>
+      <p class="card-subtitle">
+        Keep your account safe with an extra layer of security. Pick how you want to verify your identity.
+      </p>
+
+      <!-- 2FA Selection Cards -->
+      <div class="options-grid">
+        
+        <!-- Authenticator App Option (Default Selected) -->
+        <div class="option-card active" id="opt-app">
+          <div class="option-header">
+            <div class="icon-box purple-bg">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <span class="tag-recommended">RECOMMENDED</span>
+          </div>
+          <h3>Authenticator App</h3>
+          <p>Get a login code from an app on your phone. Works even without internet — the most secure option.</p>
+        </div>
+
+        <!-- SMS Option -->
+        <div class="option-card" id="opt-sms">
+          <div class="option-header">
+            <div class="icon-box cyan-bg">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </div>
+          </div>
+          <h3>SMS Verification</h3>
+          <p>Get a one-time code sent to your phone number. Quick and easy to set up.</p>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-wrapper">
+        <button class="btn-cyan full-width" id="enable-btn">ENABLE PROTECTION</button>
+        <button class="btn-text-muted" id="skip-btn">MAYBE LATER</button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-grid">
+      
+      <!-- Brand & Socials -->
+      <div class="footer-brand">
+        <div class="logo-text sm">OLOS</div>
+        <p class="brand-desc">
+          Web3 skill gaming , Compete,<br>
+          Stake and earn -your reputation<br>
+          lives on-chain
+        </p>
+
+        <div class="social-pills">
+          <a href="#" class="social-icon" title="X (Twitter)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFF">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </a>
+          <a href="#" class="social-icon" title="Slack">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#E01E5A">
+              <path d="M6 15a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 2a3 3 0 0 0-3 3 3 3 0 0 0 6 0v-3zm6-11a3 3 0 1 0 3-3 3 3 0 0 0-3 3zm0 2a3 3 0 0 0 3 3 3 3 0 0 0 0-6zm6 5a3 3 0 1 0 3 3 3 3 0 0 0-3-3zm-2 0a3 3 0 0 0-3-3 3 3 0 0 0 0 6zm-5 6a3 3 0 1 0-3 3 3 0 0 0 3-3zm0-2a3 3 0 0 0-3-3 3 3 0 0 0 0 6z" fill="#00D2FF"/>
+            </svg>
+          </a>
+          <a href="#" class="social-icon" title="Telegram">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#0088cc">
+              <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-2.02 9.51c-.15.68-.56.84-1.13.53l-3.1-2.28-1.5 1.44c-.17.17-.31.31-.63.31l.22-3.16 5.76-5.2c.25-.22-.05-.34-.39-.12l-7.12 4.48-3.07-.96c-.67-.21-.68-.67.14-.99l12.01-4.63c.56-.2 1.05.14.83.87z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Games Column -->
+      <div class="footer-column">
+        <h4>Games</h4>
+        <ul>
+          <li><a href="#">Snake Xenzia</a></li>
+          <li><a href="#">Chess Arena</a></li>
+          <li><a href="#">Tetris Blitz</a></li>
+          <li><a href="#">Bounce King</a></li>
+          <li><a href="#">Jumping Jack</a></li>
+          <li><a href="#">Checkers Rush</a></li>
+        </ul>
+      </div>
+
+      <!-- Platform Column -->
+      <div class="footer-column">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="#">Leaderboard</a></li>
+          <li><a href="#">Match History</a></li>
+          <li><a href="#">GVT Token</a></li>
+          <li><a href="#">Smart Contract</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">API</a></li>
+        </ul>
+      </div>
+
+      <!-- Company Column -->
+      <div class="footer-column">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">How It Work</a></li>
+          <li><a href="#">FAQ</a></li>
+          <li><a href="#">Support</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Privacy</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Copyright Bar -->
+    <div class="footer-bottom">
+      <span>&copy; 2026 OLOS Gaming Platform. All rights reserved</span>
+      <span>Powered by GVT Token • EVM Smart Contracts</span>
+    </div>
+  </footer>
+
+  <script src="veri.js"></script>
+</body>
+</html>
