@@ -4,13 +4,18 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
     return [
       {
-        source: '/api/:path*',
+        source: "/api/:path*",
         destination: `${apiUrl}/api/:path*`,
       },
-    ]
+    ];
+  },
+  turbopack: {
+    resolveAlias: {
+      accounts: "./src/lib/empty-module.js",
+    },
   },
 };
 
