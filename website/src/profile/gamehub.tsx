@@ -13,8 +13,8 @@ import {
   HiStar,
 } from "react-icons/hi2";
 import { IoGameController, IoFlame } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
 
-// All Games Catalog Data
 const allGames = [
   {
     id: 1,
@@ -22,7 +22,7 @@ const allGames = [
     players: "1.2k playing",
     rating: 4.8,
     category: "Strategy",
-    image: "snake.png",
+    image: "snake-image.jpg",
     btnColor: "bg-emerald-500 hover:bg-emerald-400 text-black",
   },
   {
@@ -31,7 +31,7 @@ const allGames = [
     players: "850 playing",
     rating: 4.6,
     category: "Puzzle",
-    image: "tetris.png",
+    image: "tetris-image.jpg",
     btnColor: "bg-purple-600 hover:bg-purple-500 text-white",
   },
   {
@@ -54,7 +54,6 @@ const allGames = [
   },
 ];
 
-// Continue Playing Data
 const continueGames = [
   {
     title: "Snake Battle",
@@ -81,12 +80,11 @@ const continueGames = [
 export default function GameHub() {
   const [activeNav, setActiveNav] = useState("Game");
   const [activeCategory, setActiveCategory] = useState("All");
-
+  const navigate = useNavigate();
   const categories = ["All", "Strategy", "Puzzle", "Action", "Arcade"];
 
   return (
     <div className="flex min-h-screen w-full bg-[#060812] text-white font-sans">
-      {/* Sidebar Navigation */}
       <aside className="w-64 border-r border-slate-800/60 bg-[#090c17] p-6 flex flex-col justify-between shrink-0">
         <div>
           <div className="flex items-center gap-2 mb-8">
@@ -100,17 +98,24 @@ export default function GameHub() {
 
           <nav className="space-y-2">
             {[
-              { name: "Dashboard", icon: <HiSquares2X2 /> },
-              { name: "Game", icon: <IoGameController /> },
-              { name: "Leaderboard", icon: <HiTrophy /> },
-              { name: "Tournaments", icon: <IoFlame /> },
-              { name: "Wallet", icon: <HiWallet /> },
-              { name: "Profile", icon: <HiUser /> },
-              { name: "How it works", icon: <HiQuestionMarkCircle /> },
+              { name: "Dashboard", link: "/", icon: <HiSquares2X2 /> },
+              { name: "Game", link: "/", icon: <IoGameController /> },
+              { name: "Leaderboard", link: "/", icon: <HiTrophy /> },
+              { name: "Tournaments", link: "/", icon: <IoFlame /> },
+              { name: "Wallet", link: "/stake", icon: <HiWallet /> },
+              { name: "Profile", link: "/", icon: <HiUser /> },
+              {
+                name: "How it works",
+                link: "/",
+                icon: <HiQuestionMarkCircle />,
+              },
             ].map((item) => (
               <button
                 key={item.name}
-                onClick={() => setActiveNav(item.name)}
+                onClick={() => {
+                  setActiveNav(item.name);
+                  navigate(item.link);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
                   activeNav === item.name
                     ? "bg-purple-600/20 text-purple-400 border border-purple-500/40"
@@ -125,13 +130,11 @@ export default function GameHub() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto p-8 space-y-8">
-        {/* Header */}
         <header className="flex justify-between items-center">
           <div>
             <span className="text-xs text-slate-400">Welcome back! 👋</span>
-            <h1 className="text-2xl font-bold">Nafisa</h1>
+            <h1 className="text-2xl font-bold text-cyan-400">Nafisa</h1>
             <p className="text-xs text-slate-400 mt-0.5">
               Ready to play, stake and win?
             </p>
@@ -151,12 +154,13 @@ export default function GameHub() {
           </div>
         </header>
 
-        {/* Top Balance Stats Bar */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#0a0e1a] border border-slate-800/80 p-5 rounded-2xl items-center">
             <div>
               <span className="text-xs text-slate-400">GVT Balance</span>
-              <p className="text-lg font-bold text-white">2,480.00</p>
+              <p className="text-lg font-bold text-white text-cyan-400">
+                2,480.00
+              </p>
               <span className="text-[10px] text-slate-500">$248.00</span>
             </div>
             <div>
@@ -166,7 +170,7 @@ export default function GameHub() {
             </div>
             <div>
               <span className="text-xs text-slate-400">Games Played</span>
-              <p className="text-lg font-bold text-white">32</p>
+              <p className="text-lg font-bold text-white text-cyan-400">32</p>
               <span className="text-[10px] text-slate-500">This Month</span>
             </div>
             <div>
@@ -197,7 +201,6 @@ export default function GameHub() {
           </div>
         </section>
 
-        {/* Featured Game & Live Leaderboard */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-[#0d101d] border border-slate-800 rounded-2xl p-6 relative flex items-center justify-between overflow-hidden">
             <div>
@@ -215,7 +218,6 @@ export default function GameHub() {
               </button>
             </div>
 
-            {/* Featured Image */}
             <div className="relative w-40 h-40 flex items-center justify-center">
               <div className="w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl absolute"></div>
               <img
@@ -261,7 +263,6 @@ export default function GameHub() {
           </div>
         </section>
 
-        {/* Continue Playing & Recent Match */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <h3 className="font-bold text-sm mb-3">Continue Playing</h3>
@@ -271,7 +272,6 @@ export default function GameHub() {
                   key={game.title}
                   className="bg-[#0b0e1a] border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between h-36"
                 >
-                  {/* Image Container replacing stickers */}
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
                     <img
                       src={game.image}
@@ -325,7 +325,6 @@ export default function GameHub() {
           </div>
         </section>
 
-        {/* Bottom Section: All Games Catalog */}
         <section className="space-y-4 pt-4 border-t border-slate-800/60">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h3 className="font-bold text-lg">All Games</h3>
@@ -347,7 +346,6 @@ export default function GameHub() {
             </div>
           </div>
 
-          {/* All Games Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {allGames
               .filter(
@@ -359,7 +357,6 @@ export default function GameHub() {
                   key={game.id}
                   className="bg-[#0a0e1a] border border-slate-800 rounded-2xl overflow-hidden flex flex-col group hover:border-purple-500/50 transition duration-200"
                 >
-                  {/* Game Image Banner replacing icon */}
                   <div className="h-40 bg-slate-900 overflow-hidden relative">
                     <img
                       src={game.image}

@@ -1,6 +1,8 @@
 import { GiGamepad } from "react-icons/gi";
+import { useNavigate } from "react-router-dom";
 
 export default function Homepage() {
+  const navigate = useNavigate();
   return (
     <>
       <div className="flex items-center gap-10">
@@ -31,11 +33,17 @@ export default function Homepage() {
             spot. Your record lives permanent on-chain
           </p>
           <div className="ml-15 flex items-center gap-5 mt-10">
-            <div className="flex items-center gap-2 font-extrabold bg-[#169EFA] rounded-[10px] px-7 py-2">
+            <div
+              onClick={() => navigate("/gamehub")}
+              className="flex items-center gap-2 font-extrabold bg-[#169EFA] rounded-[10px] px-7 py-2"
+            >
               <GiGamepad size={"30px"} />
               Start Playing
             </div>
-            <div className="font-extrabold flex items-center gap-2 text-white border-[#169EFA] border-1 rounded-[10px] px-7 py-2">
+            <div
+              onClick={() => navigate("/leaderboard")}
+              className="font-extrabold flex items-center gap-2 text-white border-[#169EFA] border-1 rounded-[10px] px-7 py-2"
+            >
               🏆 Leaderboard
             </div>
           </div>

@@ -1,7 +1,9 @@
 import { HiUserGroup } from "react-icons/hi2";
 import { GiGamepad } from "react-icons/gi";
+import { useNavigate } from "react-router-dom";
 
 export default function HomeContinous() {
+  const navigate = useNavigate();
   return (
     <>
       <div>
@@ -62,7 +64,10 @@ export default function HomeContinous() {
               </div>
             </div>
             <div className="flex mt-20 ml-1">
-              <div className="flex items-center justify-center gap-2 font-extrabold bg-[#09B600] rounded-[10px] px-7 py-2 w-60">
+              <div
+                onClick={() => navigate("/gamehub")}
+                className="flex items-center justify-center gap-2 font-extrabold bg-[#09B600] rounded-[10px] px-7 py-2 w-60"
+              >
                 <GiGamepad size={"30px"} />
                 Start Playing
               </div>
@@ -116,7 +121,10 @@ export default function HomeContinous() {
               </div>
             </div>
             <div className="flex mt-20 ml-1">
-              <div className="flex items-center justify-center gap-2 font-extrabold bg-[#169EFA] rounded-[10px] px-7 py-2 w-60">
+              <div
+                onClick={() => navigate("/gamehub")}
+                className="flex items-center justify-center gap-2 font-extrabold bg-[#169EFA] rounded-[10px] px-7 py-2 w-60"
+              >
                 <GiGamepad size={"30px"} />
                 Start Playing
               </div>
@@ -170,7 +178,10 @@ export default function HomeContinous() {
                 </div>
               </div>
               <div className="flex mt-20 ml-1">
-                <div className="flex items-center justify-center gap-2 font-extrabold bg-[#360259] rounded-[10px] px-7 py-2 w-60">
+                <div
+                  onClick={() => navigate("/gamehub")}
+                  className="flex items-center justify-center gap-2 font-extrabold bg-[#360259] rounded-[10px] px-7 py-2 w-60"
+                >
                   <GiGamepad size={"30px"} />
                   Start Playing
                 </div>
@@ -225,7 +236,10 @@ export default function HomeContinous() {
                 </div>
               </div>
               <div className="flex mt-20 ml-1">
-                <div className="flex items-center justify-center gap-2 font-extrabold bg-[#D06311] rounded-[10px] px-7 py-2 w-60">
+                <div
+                  onClick={() => navigate("/gamehub")}
+                  className="flex items-center justify-center gap-2 font-extrabold bg-[#D06311] rounded-[10px] px-7 py-2 w-60"
+                >
                   <GiGamepad size={"30px"} />
                   Start Playing
                 </div>

@@ -34,7 +34,7 @@ const wallets = [
   },
 ];
 
-function ConnectWalletModal({ onClose }: { onClose: () => void }) {
+export function ConnectWalletModal({ onClose }: { onClose: () => void }) {
   const [selectedWallet, setSelectedWallet] = useState<string>("walletconnect");
   const [agreed, setAgreed] = useState<boolean>(false);
 
@@ -50,7 +50,6 @@ function ConnectWalletModal({ onClose }: { onClose: () => void }) {
         >
           <HiXMark className="text-2xl" />
         </button>
-
         <div className="w-16 h-16 mb-4 flex items-center justify-center relative">
           <div className="absolute inset-0 border-2 border-purple-500/80 rounded-2xl rotate-45 transform"></div>
           <span className="text-purple-400 text-2xl font-bold z-10">⬡</span>

@@ -1,6 +1,9 @@
 import { GiGamepad } from "react-icons/gi";
+import { ConnectWalletModal } from "./stake";
+import { useState } from "react";
 
 export default function GetStarted() {
+  const [isMODALOpen, setIsModalOpen] = useState(false);
   return (
     <footer className="w-full bg-[#05070e] text-white pt-16 pb-8 px-6">
       <div className="max-w-6xl mx-auto">
@@ -17,7 +20,10 @@ export default function GetStarted() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-            <button className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-black font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-black font-bold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition"
+            >
               <GiGamepad className="text-lg" /> Connect & Play
             </button>
             <button className="w-full sm:w-auto border border-cyan-500/40 hover:bg-cyan-500/10 text-cyan-400 font-semibold px-6 py-3 rounded-xl transition">
@@ -96,6 +102,13 @@ export default function GetStarted() {
           <p>Powered by GVT Token · EVM Smart Contracts</p>
         </div>
       </div>
+      {isMODALOpen && (
+        <ConnectWalletModal
+          onClose={() => {
+            setIsModalOpen(false);
+          }}
+        />
+      )}
     </footer>
   );
 }
