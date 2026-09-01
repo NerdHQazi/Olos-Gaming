@@ -1,16 +1,32 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import Navbar from '@/components/Navbar';
-import { useAuth } from '@/context/AuthContext';
-import { useWallet } from '@/context/WalletContext';
-import { WalletDashboardBadge } from '@/components/WalletDashboardBadge';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useWallet } from "@/context/WalletContext";
+import {
+  HiSquares2X2,
+  HiTrophy,
+  HiWallet,
+  HiQuestionMarkCircle,
+  HiChevronLeft,
+  HiChevronRight,
+  HiArrowDown,
+  HiArrowUp,
+  HiBell,
+  HiStar,
+} from "react-icons/hi2";
+import { HiArrowLeft } from "react-icons/hi";
+import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
   const [hydrated, setHydrated] = useState(false);
   const { user, isLoggedIn, isLoading } = useAuth();
   const { balance, isLoading: walletLoading } = useWallet();
+
+  const [activeNav, setActiveNav] = useState("Game");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const router = useRouter();
+  const categories = ["All", "Strategy", "Puzzle", "Action", "Arcade"];
 
   useEffect(() => {
     setHydrated(true);
@@ -18,72 +34,391 @@ export default function DashboardPage() {
 
   const showAuthedState = hydrated && isLoggedIn;
   const showWalletBalance = hydrated && !walletLoading;
-  const statusLabel = !hydrated || isLoading ? 'Loading' : isLoggedIn ? 'Authenticated' : 'Signed out';
+  const statusLabel =
+    !hydrated || isLoading
+      ? "Loading"
+      : isLoggedIn
+        ? "Authenticated"
+        : "Signed out";
+
+  const allGames = [
+    {
+      id: 1,
+      title: "Snake Battle",
+      players: "1.2k playing",
+      rating: 4.8,
+      category: "Strategy",
+      image: "snake-image.jpg",
+      btnColor: "bg-emerald-500 hover:bg-emerald-400 text-black",
+    },
+    {
+      id: 2,
+      title: "Block Blitz",
+      players: "850 playing",
+      rating: 4.6,
+      category: "Puzzle",
+      image: "tetris-image.jpg",
+      btnColor: "bg-purple-600 hover:bg-purple-500 text-white",
+    },
+    {
+      id: 3,
+      title: "Jumping Arena",
+      players: "2.1k playing",
+      rating: 4.9,
+      category: "Action",
+      image: "jumping-jack.png",
+      btnColor: "bg-purple-600 hover:bg-purple-500 text-white",
+    },
+    {
+      id: 4,
+      title: "BounceKing",
+      players: "410 playing",
+      rating: 4.5,
+      category: "Arcade",
+      image: "bounce.png",
+      btnColor: "bg-orange-500 hover:bg-orange-400 text-black",
+    },
+  ];
+
+  const continueGames = [
+    {
+      title: "Snake Battle",
+      progress: "75%",
+      image: "snake.png",
+    },
+    {
+      title: "Block Blitz",
+      progress: "40%",
+      image: "tetris.png",
+    },
+    {
+      title: "Jumping Arena",
+      progress: "25%",
+      image: "jumping-jack.png",
+    },
+    {
+      title: "BounceKing",
+      progress: "10%",
+      image: "bounce.png",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#070E1A] text-white">
-      <Navbar />
+    <div className="flex min-h-screen w-full bg-[#060812] text-white font-sans">
+      <aside className="w-64 border-r border-slate-800/60 bg-[#090c17] p-6 flex flex-col justify-between shrink-0">
+        <div>
+          <div className="flex items-center gap-2 mb-8">
+            <span className="text-blue-500 font-extrabold text-2xl tracking-wider">
+              OLOS
+            </span>
+            <span className="text-[10px] font-semibold bg-purple-900/50 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded uppercase">
+              BETA
+            </span>
+          </div>
 
-      <main className="pt-28 pb-16 px-4 md:px-8">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <section className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-[#0B1121] p-6 md:p-8">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-gray-500">Dashboard</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-white">
-                {showAuthedState ? `Welcome back, ${user?.username || user?.email?.split('@')[0] || 'Player'}` : 'Your OLOS dashboard'}
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm text-gray-400">
-                Review your wallet balance, jump into staking, and continue managing your OLOS account from one place.
-              </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Platform Balance</p>
-                <p className="mt-3 text-3xl font-black text-white">
-                  {showWalletBalance ? `${balance.toLocaleString()} GVT` : '...'}
-                </p>
-                <p className="mt-2 text-xs text-gray-400">Live value from your Supabase wallet record.</p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Profile</p>
-                <p className="mt-3 text-lg font-black text-white">{showAuthedState ? user?.fullName || user?.email || 'Guest' : 'Guest'}</p>
-                <p className="mt-2 text-xs text-gray-400">Username: {showAuthedState ? user?.username || 'Not set' : 'Not set'}</p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Status</p>
-                <p className="mt-3 text-lg font-black text-white">{statusLabel}</p>
-                <p className="mt-2 text-xs text-gray-400">Use the quick links below to continue navigating.</p>
-              </div>
-            </div>
-          </section>
-
-          <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-3xl border border-white/10 bg-[#0B1121] p-6 md:p-8">
-              <h2 className="text-xl font-black text-white">Quick Actions</h2>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Link href="/profile" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-bold text-gray-200 transition-colors hover:border-white/20 hover:text-white">
-                  Open Profile
-                </Link>
-                <Link href="/wallet" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-bold text-gray-200 transition-colors hover:border-white/20 hover:text-white">
-                  View Wallet
-                </Link>
-                <Link href="/stake" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-bold text-gray-200 transition-colors hover:border-white/20 hover:text-white">
-                  Stake GVT
-                </Link>
-                <Link href="/games" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-bold text-gray-200 transition-colors hover:border-white/20 hover:text-white">
-                  Browse Games
-                </Link>
-              </div>
-            </div>
-
-            <div className="min-h-[320px]">
-              {hydrated ? <WalletDashboardBadge /> : <div className="h-full rounded-3xl border border-white/10 bg-[#0B1121] p-6 md:p-8" />}
-            </div>
-          </section>
+          <nav className="space-y-2">
+            {[
+              { name: "Dashboard", link: "/dashboard", icon: <HiSquares2X2 /> },
+              { name: "Wallet", link: "/wallet", icon: <HiWallet /> },
+              { name: "Leaderboard", link: "/leaderboard", icon: <HiTrophy /> },
+              {
+                name: "How it works",
+                link: "/how-to",
+                icon: <HiQuestionMarkCircle />,
+              },
+            ].map((item) => (
+              <button
+                key={item.name}
+                onClick={() => {
+                  setActiveNav(item.name);
+                  router.push(item.link);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
+                  (activeNav === item.name,
+                  item.link
+                    ? "bg-purple-600/20 text-purple-400 border border-purple-500/40 "
+                    : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200")
+                }`}
+              >
+                <span className="text-lg">{item.icon}</span>
+                {item.name}
+              </button>
+            ))}
+          </nav>
         </div>
+      </aside>
+
+      <main className="flex-1 overflow-y-auto p-8 space-y-8">
+        <header className="flex justify-between items-center">
+          <div
+            onClick={() => router.push("/")}
+            className="flex gap-7 items-center cursor-pointer"
+          >
+            <HiArrowLeft color="#8c57e7" />
+            <p className="text-slate-400 text-xs">Back to Home</p>
+          </div>
+          <div>
+            <span className="text-xs text-slate-400">Welcome back! 👋</span>
+            <h1 className="text-2xl font-bold text-cyan-400">Nafisa</h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Ready to play, stake and win?
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="bg-[#0e1222] border border-slate-800 px-3 py-1.5 rounded-full text-xs flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="text-slate-300">Ethereum</span>
+            </div>
+            <div className="bg-[#0e1222] border border-slate-800 px-3 py-1.5 rounded-full text-xs font-semibold">
+              $1,703.345
+            </div>
+            <button className="p-2.5 bg-[#0e1222] border border-slate-800 rounded-full text-slate-300 hover:text-white">
+              <HiBell className="text-lg" />
+            </button>
+          </div>
+        </header>
+
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#0a0e1a] border border-slate-800/80 p-5 rounded-2xl items-center">
+            <div>
+              <span className="text-xs text-slate-400">GVT Balance</span>
+              <p className="text-lg font-bold text-white text-cyan-400">
+                2,480.00
+              </p>
+              <span className="text-[10px] text-slate-500">$248.00</span>
+            </div>
+            <div>
+              <span className="text-xs text-slate-400">Total Winnings</span>
+              <p className="text-lg font-bold text-cyan-400">840.50</p>
+              <span className="text-[10px] text-slate-500">$84.05</span>
+            </div>
+            <div>
+              <span className="text-xs text-slate-400">Games Played</span>
+              <p className="text-lg font-bold text-white text-cyan-400">32</p>
+              <span className="text-[10px] text-slate-500">This Month</span>
+            </div>
+            <div>
+              <span className="text-xs text-slate-400">Win Rate</span>
+              <p className="text-lg font-bold text-emerald-400">68%</p>
+              <span className="text-[10px] text-slate-500">This Month</span>
+            </div>
+          </div>
+
+          <div className="bg-[#0e1326] border border-purple-500/30 p-5 rounded-2xl flex flex-col justify-between">
+            <div>
+              <span className="text-xs text-slate-400">Total Balance</span>
+              <h2 className="text-xl font-black text-white mt-0.5">
+                2,480.00{" "}
+                <span className="text-xs font-normal text-slate-400">GVT</span>
+              </h2>
+              <span className="text-[10px] text-slate-400">$248.00 USD</span>
+            </div>
+
+            <div className="flex gap-3 mt-3">
+              <button className="flex-1 bg-red-600 hover:bg-red-500 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1">
+                <HiArrowDown /> Deposit
+              </button>
+              <button className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1">
+                <HiArrowUp /> Withdraw
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-[#0d101d] border border-slate-800 rounded-2xl p-6 relative flex items-center justify-between overflow-hidden">
+            <div>
+              <span className="bg-purple-900/50 border border-purple-500/40 text-purple-300 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">
+                Featured Game
+              </span>
+              <h2 className="text-3xl font-black uppercase tracking-wide mt-3">
+                SNAKE BATTLE
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Classic game. On-chain stakes. Epic rewards
+              </p>
+              <button className="mt-6 bg-purple-600 hover:bg-purple-500 px-6 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-purple-600/30">
+                Play Now
+              </button>
+            </div>
+
+            <div className="relative w-40 h-40 flex items-center justify-center">
+              <div className="w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl absolute"></div>
+              <img
+                src="/assets/images/snake-battle.png"
+                alt="Snake Battle"
+                className="w-32 h-32 object-contain z-10"
+              />
+            </div>
+
+            <button className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 rounded-full text-slate-300 hover:text-white">
+              <HiChevronLeft />
+            </button>
+            <button className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 bg-black/40 rounded-full text-slate-300 hover:text-white">
+              <HiChevronRight />
+            </button>
+          </div>
+
+          <div className="bg-[#0a0e1a] border border-slate-800 p-5 rounded-2xl">
+            <h3 className="font-bold text-sm mb-3">Live Leaderboard</h3>
+            <div className="space-y-2.5">
+              {[
+                { rank: 1, name: "GreenKing", score: "12,480" },
+                { rank: 2, name: "Satoshi12", score: "8,950" },
+                { rank: 3, name: "ChainLord", score: "6,700" },
+                { rank: 4, name: "BlockMaster", score: "5,210" },
+              ].map((user) => (
+                <div
+                  key={user.rank}
+                  className="flex items-center justify-between text-xs p-2 rounded-lg bg-slate-900/40 border border-slate-800/40"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-bold text-slate-500">
+                      #{user.rank}
+                    </span>
+                    <span className="font-medium text-slate-200">
+                      {user.name}
+                    </span>
+                  </div>
+                  <span className="font-bold text-amber-400">{user.score}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <h3 className="font-bold text-sm mb-3">Continue Playing</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {continueGames.map((game) => (
+                <div
+                  key={game.title}
+                  className="bg-[#0b0e1a] border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between h-36"
+                >
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
+                    <img
+                      src={game.image}
+                      alt={game.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div>
+                    <h4 className="font-bold text-xs mb-1.5">{game.title}</h4>
+                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-purple-500 h-full rounded-full"
+                        style={{ width: game.progress }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-[#0a0e1a] border border-slate-800 p-5 rounded-2xl">
+            <h3 className="font-bold text-sm mb-3">Recent Match</h3>
+            <div className="space-y-2.5">
+              {[
+                { game: "Snake Battle", change: "+120 GVT", status: "win" },
+                { game: "Chess Arena", change: "-80 GVT", status: "loss" },
+                { game: "Block Blitz", change: "+95 GVT", status: "win" },
+              ].map((match, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-900/30 border border-slate-800/40"
+                >
+                  <div>
+                    <p className="font-semibold text-slate-200">{match.game}</p>
+                    <span className="text-[10px] text-slate-500">2m ago</span>
+                  </div>
+                  <span
+                    className={`font-bold ${
+                      match.status === "win"
+                        ? "text-emerald-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {match.change}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-4 pt-4 border-t border-slate-800/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h3 className="font-bold text-lg">All Games</h3>
+
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                    activeCategory === cat
+                      ? "bg-purple-600 text-white"
+                      : "bg-slate-900 border border-slate-800 text-slate-400 hover:border-slate-700"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {allGames
+              .filter(
+                (g) =>
+                  activeCategory === "All" || g.category === activeCategory,
+              )
+              .map((game) => (
+                <div
+                  key={game.id}
+                  className="bg-[#0a0e1a] border border-slate-800 rounded-2xl overflow-hidden flex flex-col group hover:border-purple-500/50 transition duration-200"
+                >
+                  <div className="h-40 bg-slate-900 overflow-hidden relative">
+                    <img
+                      src={game.image}
+                      alt={game.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                    />
+                  </div>
+
+                  <div className="p-4 flex flex-col justify-between flex-1 space-y-3">
+                    <div>
+                      <h4 className="font-bold text-sm text-white">
+                        {game.title}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {game.players}
+                      </p>
+
+                      <div className="flex items-center gap-1 text-amber-400 text-xs mt-1">
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                          <HiStar key={idx} />
+                        ))}
+                        <span className="text-[10px] text-slate-400 ml-1">
+                          {game.rating}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      className={`w-full py-2.5 rounded-xl font-bold text-xs transition shadow-md ${game.btnColor}`}
+                    >
+                      Play Now
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </section>
       </main>
     </div>
   );

@@ -1,5 +1,5 @@
-import LeaderboardScreen from "../../../Screens/Leaderboard/LeaderboardScreen";
+import LeaderBoard from "@/app/Home/leaderboard";
 
-export default function Page() {
-  return <LeaderboardScreen />;
+export default function Leaderboard() {
+  return <LeaderBoard />;
 }

@@ -1,4 +1,4 @@
-import StakeAmount from "./stake-amount";
+import StakeAmount from "@/app/dashboard/stake-amount";
 
 export default function Page() {
   return <StakeAmount />;
