@@ -1,5 +1,7 @@
-import StakeAmount from "./stake-amount";
+'use client';
 
-export default function Page() {
-  return <StakeAmount />;
+import WalletScreen from '../../../Screens/wallet/WalletScreen';
+
+export default function WalletPage() {
+  return <WalletScreen />;
 }
