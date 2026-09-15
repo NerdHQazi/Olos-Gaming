@@ -1,0 +1,7 @@
+cffi==2.1.1
+Nuitka==4.2
+numpy==2.5.2
+pillow==12.3.0
+pycparser==3.0
+pygame-ce==2.5.8
+pymunk==7.3.0
