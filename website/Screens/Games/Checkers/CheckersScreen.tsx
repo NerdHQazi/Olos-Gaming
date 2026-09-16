@@ -171,6 +171,30 @@ export default function CheckersScreen() {
   const mode = searchParams.get("mode") || "Solo";
   const matchIdParam = searchParams.get("matchId");
 
+  const logAudit = (event: string, extra: Record<string, unknown> = {}) => {
+    const entry = {
+      ts: new Date().toISOString(),
+      event,
+      mode,
+      matchIdParam,
+      ...extra,
+    };
+
+    try {
+      if (typeof window !== 'undefined') {
+        const w = window as any;
+        if (!Array.isArray(w.__MM_AUDIT_LOGS)) {
+          w.__MM_AUDIT_LOGS = [];
+        }
+        w.__MM_AUDIT_LOGS.push(entry);
+      }
+    } catch {
+      // no-op
+    }
+
+    console.log('[MM_AUDIT]', entry);
+  };
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [board, setBoard] = useState<Board>(initialBoard);
   const boardRef = useRef(board);
@@ -202,6 +226,14 @@ export default function CheckersScreen() {
     if (!matchId) return;
     const { data: { user } } = await supabase.auth.getUser();
     const { data } = await supabase.from('matches').select('*').eq('id', matchId).single();
+    logAudit('board.fetch_match_state', {
+      userId: user?.id ?? null,
+      matchId,
+      hasMatchData: !!data,
+      status: data?.status ?? null,
+      player1: data?.player1_id ?? null,
+      player2: data?.player2_id ?? null,
+    });
     if (data && user) {
       if (data.board_state) setBoard(data.board_state);
       setTurn(data.current_turn === data.player1_id ? "red" : "black");
@@ -216,11 +248,19 @@ export default function CheckersScreen() {
 
   useEffect(() => {
     if (mode === '1v1' && matchId) {
+      logAudit('board.mode_1v1_with_match', { matchId });
       fetchMatchState();
 
       const channel = supabase
         .channel(`checkers:${matchId}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` }, (payload) => {
+          logAudit('board.realtime.matches_update', {
+            matchId,
+            status: payload.new?.status ?? null,
+            currentTurn: payload.new?.current_turn ?? null,
+            winnerId: payload.new?.winner_id ?? null,
+            hasBoardState: !!payload.new?.board_state,
+          });
           if (payload.new.board_state) setBoard(payload.new.board_state);
           setTurn(payload.new.current_turn === payload.new.player1_id ? "red" : "black");
           setP1Time(payload.new.player1_time_remaining);
@@ -234,11 +274,14 @@ export default function CheckersScreen() {
         })
         .subscribe();
 
+      logAudit('board.realtime.subscribe', { channel: `checkers:${matchId}` });
+
       const tickTimer = setInterval(async () => {
         await supabase.functions.invoke('game_tick', { body: { match_id: matchId } });
       }, 5000);
 
       return () => {
+        logAudit('board.realtime.cleanup', { channel: `checkers:${matchId}` });
         supabase.removeChannel(channel);
         clearInterval(tickTimer);
       };
@@ -323,7 +366,7 @@ export default function CheckersScreen() {
           const followUp = moveObj.captured.length ? exploreCaptures(nb, finalR, finalC, nb[finalR][finalC]!, []) : [];
           const isFinished = !followUp.length && checkEnd(nb, oppColor(playerColor));
           
-          await supabase.rpc('perform_game_move', {
+          const { error: moveError } = await supabase.rpc('perform_game_move', {
             p_match_id: matchId,
             p_player_id: user.id,
             p_move_data: {
@@ -333,6 +376,9 @@ export default function CheckersScreen() {
               status: isFinished ? 'finished' : 'active'
             }
           });
+          if (moveError) {
+            console.error('[Checkers] perform_game_move failed:', moveError.message);
+          }
           
           if (followUp.length) {
             setMustContinue([finalR, finalC]);
@@ -396,6 +442,7 @@ export default function CheckersScreen() {
 
   // Pre-game state is now handled by GamesScreen.tsx global matchmaking
   if (mode === '1v1' && !matchId) {
+    logAudit('board.gate_block_no_match_id');
     return (
       <div className="min-h-screen bg-[#0B1121] flex flex-col items-center justify-center p-4">
         <Navbar />
