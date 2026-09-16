@@ -15,7 +15,10 @@ createAppKit({
   metadata: {
     name: "OLOS Gaming",
     description: "Play, Complete, Win — skill-based 1v1 gaming",
-    url: typeof window !== "undefined" ? window.location.origin : "https://olos.gg",
+    url:
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://olos.gg",
     icons: ["/favicon.ico"],
   },
   features: {
@@ -38,10 +41,11 @@ interface ProvidersProps {
 
 export function Web3Providers({ children, initialState }: ProvidersProps) {
   return (
-    <WagmiProvider config={wagmiAdapter.wagmiConfig} initialState={initialState}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+    <WagmiProvider
+      config={wagmiAdapter.wagmiConfig}
+      initialState={initialState}
+    >
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
   );
 }
