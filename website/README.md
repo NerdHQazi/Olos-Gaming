@@ -1,7 +1,5 @@
 # OLOS Onboarding — build notes
 
-Drop `src/app/auth/*`, `src/components/auth/*` and `public/images/*` straight into your
-existing Next.js (App Router) project — same paths you were already using. No new
 dependencies needed (`next/image`, `next/link`, `next/navigation` only).
 
 ## Pages built
