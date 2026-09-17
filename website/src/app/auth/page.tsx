@@ -1,5 +1,5 @@
-import AuthScreen from "../../../Screens/Auth/AuthScreen";
+import { redirect } from 'next/navigation';
 
-export default function Page() {
-  return <AuthScreen />;
+export default function AuthRoot() {
+  redirect('/auth/welcome');
 }
