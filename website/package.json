@@ -9,10 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@metamask/connect-evm": "^2.1.1",
     "@reown/appkit": "^1.8.18",
     "@reown/appkit-adapter-wagmi": "^1.8.18",
     "@supabase/supabase-js": "^2.97.0",
     "@tanstack/react-query": "^5.90.21",
+    "@walletconnect/ethereum-provider": "^2.25.0",
+    "@x402/core": "^2.26.0",
+    "@x402/evm": "^2.26.0",
+    "@x402/svm": "^2.26.0",
     "ethers": "^6.17.0",
     "next": "16.1.6",
     "react": "19.2.3",
@@ -28,6 +33,8 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "lightningcss": "^1.30.2",
+    "lightningcss-linux-x64-gnu": "^1.30.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
