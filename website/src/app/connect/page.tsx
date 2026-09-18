@@ -97,6 +97,8 @@ export default function Page() {
   const [eip6963Providers, setEip6963Providers] = useState<
     EIP6963ProviderDetail[]
   >([]);
+
+  console.log(walletAddress);
   const [metaMaskProvider, setMetaMaskProvider] =
     useState<EthereumProvider | null>(null);
 
@@ -272,6 +274,9 @@ export default function Page() {
       }
 
       setWalletAddress(account);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("eth_address", account);
+      }
       setConnectedWallet("MetaMask");
       setConnectionState("success");
     } catch (error) {
