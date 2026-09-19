@@ -20,32 +20,32 @@ export default function HomeScreen() {
       <BackToTop />
       
       {/* Hero Section */}
-      <section className="relative mx-auto mt-20.75 flex items-center justify-between pt-32 pb-10 pl-24 pr-12 overflow-hidden">
+      <section className="relative mx-auto mt-20.75 flex items-center justify-between pt-32 pb-10 pl-24 pr-12 overflow-hidden max-xl:pl-8 max-xl:pr-8 max-xl:pt-12 max-md:pl-5 max-md:pr-5">
         {/* mt-[83px] h-[633px] px-[79px] */}
         {/* Background Image Layer */}
         {/* <div className="absolute inset-0 z-0 bg-[url('/olos-logo-3d.png')] bg-[length:contain] bg-[position:65%_center] bg-no-repeat scale-110 -translate-y-8 opacity-80" /> */}
         {/* Overlay Layer */}
         <div className="absolute inset-0 z-0 bg-[#030711]/10" />
         
-        <div className="relative z-10 w-full h-full flex gap-10 items-center justify-between -translate-y-8">
+        <div className="relative z-10 w-full h-full flex gap-10 items-center justify-between -translate-y-8 max-xl:flex-col max-xl:translate-y-0 max-xl:gap-8">
           {/* max-w-[1567px] */}
           
           {/* Left Column: Text & Buttons */}
-          <div className="flex flex-col gap-7 items-start text-left z-10 animate-fade-in order-2 lg:order-1 lg:max-w-110 lg:max-h-140 -mt-16">
+          <div className="flex flex-col gap-7 items-start text-left z-10 animate-fade-in order-2 lg:order-1 lg:max-w-110 lg:max-h-140 -mt-16 max-xl:mt-0 max-xl:w-full max-xl:items-center max-xl:text-center max-xl:max-w-full! max-xl:max-h-none!">
 
             <div className="flex gap-2 items-center border px-3 py-2 rounded-2xl border-[#7034D7]/80">
               <div className="w-2 h-2 bg-[#00FF87] rounded-4xl"></div>
               <h3 className="text-[11px] inter-bold">SECURE CRYPTO ESPORTS PLATFORM</h3>
             </div>
 
-            <p className="text-[62px] inter-bold leading-16">Play Skill <span className="text-[#00D3FE]">Games.</span> Stake Tokens. <span className="text-[#FFB800]">Win On Chain.</span></p>
+            <p className="text-[62px] inter-bold leading-16 max-xl:text-[48px] max-xl:leading-[1.15] max-md:text-[38px] max-sm:text-[32px]">Play Skill <span className="text-[#00D3FE]">Games.</span> Stake Tokens. <span className="text-[#FFB800]">Win On Chain.</span></p>
 
-            <p className="text-[16px] pr-12 leading-7 text-[#A4B7EB]">Compete in lightning-fast, skill-based mini-games. Stake GVT tokens and battle head-to-head. Zero randomness, pure competition, settled instantly by audited smart contracts.</p>
+            <p className="text-[16px] pr-12 leading-7 text-[#A4B7EB] max-xl:pr-0 max-sm:text-[15px]">Compete in lightning-fast, skill-based mini-games. Stake GVT tokens and battle head-to-head. Zero randomness, pure competition, settled instantly by audited smart contracts.</p>
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 max-xl:justify-center max-sm:flex-col max-sm:w-full">
               <Link
-                href=""
-                className="px-8 py-1 rounded-lg text-[#02040A] bg-[#00D3FE] hover:bg-[#00D3FE]/60 text-[14px] font-bold transition-all active:scale-95 inter-bold flex items-center gap-1"
+                href="/games"
+                className="px-8 py-1 rounded-lg text-[#02040A] bg-[#00D3FE] hover:bg-[#00D3FE]/60 text-[14px] font-bold transition-all active:scale-95 inter-bold flex items-center gap-1 max-sm:justify-center"
               >
                 <Image src='/padIcon.png' alt="pad icon" width={32} height={32} />
                 {/* <span className="text-[32px]">🎮</span> */}
@@ -53,7 +53,7 @@ export default function HomeScreen() {
               </Link>
               <Link
                 href=""
-                className="px-10 py-2.5 rounded-lg text-white border border-white hover:border-0 hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 inter-extralight flex items-center gap-2"
+                className="px-10 py-2.5 rounded-lg text-white border border-white hover:border-0 hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 inter-extralight flex items-center gap-2 max-sm:justify-center"
               >
                 <Image src='/play-button.svg' alt="pad icon" width={20} height={20} />
                 Watch Demo
@@ -63,8 +63,8 @@ export default function HomeScreen() {
           </div>
           
           {/* Right Column: Text & Buttons */}
-          <div className="flex flex-col items-start text-left z-10 animate-fade-in order-2 lg:order-1 lg:min-w-150 -mt-16">
-            <Image src={ heroImage } alt="Hero" width={750} height={500} />
+          <div className="flex flex-col items-start text-left z-10 animate-fade-in order-2 lg:order-1 lg:min-w-150 -mt-16 max-xl:mt-0 max-xl:min-w-0! max-xl:w-full max-xl:items-center">
+            <Image src={ heroImage } alt="Hero" width={750} height={500} className="max-xl:w-full max-xl:h-auto max-xl:max-w-187.5" />
           </div>
         </div>
       </section>
@@ -93,20 +93,22 @@ export default function HomeScreen() {
           </div>
         </div>
       </section> */}
-      <section className="relative z-10 py-12 px-24 bg-[#060A16] border border-foreground/10 font-bold flex items-center justify-between">
-        <div className="flex flex-col bg-[#0B0F19] py-4 pl-5 pr-36 border border-foreground/10 rounded-2xl gap-1">
+
+      {/* Stats Section */}
+      <section className="relative z-10 py-12 px-24 bg-[#060A16] border border-foreground/10 font-bold flex items-center justify-between max-xl:grid max-xl:grid-cols-2 max-xl:items-stretch max-xl:gap-4 max-xl:px-8 max-sm:grid-cols-1 max-sm:px-5">
+        <div className="flex flex-col bg-[#0B0F19] py-4 pl-5 pr-36 border border-foreground/10 rounded-2xl gap-1 max-xl:pr-5">
           <h3 className="text-[#6B7280] text-[11px] ">ACTIVE COMPETITORS</h3>
           <h2 className="text-[#00D3FE] text-[31px] ">15,843</h2>  
         </div>
-        <div className="flex flex-col bg-[#0B0F19] py-4 pl-5 pr-36 border border-foreground/10 rounded-2xl gap-1">
+        <div className="flex flex-col bg-[#0B0F19] py-4 pl-5 pr-36 border border-foreground/10 rounded-2xl gap-1 max-xl:pr-5">
           <h3 className="text-[#6B7280] text-[11px] ">TOTAL GVT STAKED</h3>
           <h2 className="text-[#FFB800] text-[31px] ">4,210,950</h2>  
         </div>
-        <div className="flex flex-col bg-[#0B0F19] py-4 pl-5 pr-36 border border-foreground/10 rounded-2xl gap-1">
+        <div className="flex flex-col bg-[#0B0F19] py-4 pl-5 pr-36 border border-foreground/10 rounded-2xl gap-1 max-xl:pr-5">
           <h3 className="text-[#6B7280] text-[11px] ">ON-CHAIN MATCHES</h3>
           <h2 className="text-[#7034D7] text-[31px] ">534,296</h2>  
         </div>
-        <div className="flex flex-col bg-[#0B0F19] py-4 pl-5 pr-36 border border-foreground/10 rounded-2xl gap-1">
+        <div className="flex flex-col bg-[#0B0F19] py-4 pl-5 pr-36 border border-foreground/10 rounded-2xl gap-1 max-xl:pr-5">
           <h3 className="text-[#6B7280] text-[11px] ">TOTAL YIELD SETTLED</h3>
           <h2 className="text-[#00FF87] text-[31px] ">$2.1M+</h2>  
         </div>
@@ -149,13 +151,15 @@ export default function HomeScreen() {
           </div>
         </div>
       </section> */}
-      <section className="py-28 flex flex-col gap-6 items-center inter-bold">
-        <div className="flex flex-col items-center gap-2">
+
+      {/* Featured Arenas Section */}
+      <section className="py-28 flex flex-col gap-6 items-center inter-bold max-md:py-16">
+        <div className="flex flex-col items-center gap-2 max-xl:px-8 max-xl:text-center max-md:px-5">
           <h4 className="text-[13px] text-[#00D3FE]">FEATURED ARENAS</h4>
-          <h3 className="text-[38px]">Battle On-Chain, Claim The Pot</h3>
+          <h3 className="text-[38px] max-md:text-[26px] max-md:leading-tight">Battle On-Chain, Claim The Pot</h3>
           <p className="text-[15px] text-[#A4B7EB] inter-extralight">High-fidelity game environments engineered for absolute fairness. No luck, no algorithms. Just pure skill.</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 px-24 gap-6 mt-6 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 px-24 gap-6 mt-6 w-full max-xl:px-8 max-md:px-5">
             <NewGameCard 
               image="/snakeGameImage.png"
               title="Hyper-Snake Protocol"
@@ -186,13 +190,14 @@ export default function HomeScreen() {
         </div>
       </section>
 
-      <section className="relative z-10 p-24 bg-[#060A16] inter-bold flex flex-col gap-10 items-center">
-        <div className="flex flex-col items-center gap-2">
+      {/* Blueprint Section */}
+      <section className="relative z-10 p-24 bg-[#060A16] inter-bold flex flex-col gap-10 items-center max-xl:p-8 max-md:px-5 max-md:py-16">
+        <div className="flex flex-col items-center gap-2 max-xl:text-center">
           <h4 className="text-[13px] text-[#00D3FE]">SYSTEM BLUEPRINT</h4>
-          <h3 className="text-[38px]">Four Steps to Absolute Victory</h3>
+          <h3 className="text-[38px] max-md:text-[26px] max-md:leading-tight">Four Steps to Absolute Victory</h3>
           <p className="text-[15px] text-[#A4B7EB] inter-extralight">Connecting developers, gamers, and stakeholders on a trustless execution protocol.</p>
         </div>
-        <div className="flex items-center justify-between w-full gap-10">
+        <div className="flex items-center justify-between w-full gap-10 max-xl:grid max-xl:grid-cols-2 max-xl:items-stretch max-xl:gap-6 max-sm:grid-cols-1">
           <div className="flex flex-col bg-[#0B0F19] py-8 px-5 border border-foreground/10 rounded-2xl  w-full gap-3 min-h-4">
             <div className="flex items-center justify-between">
               <h3 className="text-[#7034D7] text-[27px]">01</h3>
@@ -229,22 +234,24 @@ export default function HomeScreen() {
         </div>
       </section>
 
-      <section className="p-24 flex items-center inter-bold justify-between">
-        <div className="">
+      {/* Ranking Section */}
+      <section className="p-24 flex items-center inter-bold justify-between max-xl:flex-col max-xl:items-stretch max-xl:gap-10 max-xl:p-8 max-md:px-5 max-md:py-16">
+        <div className="max-xl:w-full">
           <div className="flex flex-col gap-1.5">
             <h4 className="text-[13px] text-[#00D3FE]">ON-CHAIN STANDINGS</h4>
-            <h3 className="text-[38px]">Your Rank Lives Forever</h3>
-            <p className="text-[15px] text-[#A4B7EB] inter-extralight">Our database is the blockchain. Climb the global rankings, claim top spot <br /> rewards, and build a permanent Web3 gaming identity.</p>
+            <h3 className="text-[38px] max-md:text-[26px] max-md:leading-tight">Your Rank Lives Forever</h3>
+            <p className="text-[15px] text-[#A4B7EB] inter-extralight">Our database is the blockchain. Climb the global rankings, claim top spot <br className="max-xl:hidden" /> rewards, and build a permanent Web3 gaming identity.</p>
           </div>
-            <button
-              className="px-6 py-5 rounded-lg text-white border border-[#20CEEE80] hover:border-0 hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 flex items-center gap-4 mt-10"
+            <Link
+              href="/leaderboard"
+              className="px-6 py-5 max-w-60 rounded-lg text-white border border-[#20CEEE80] hover:border-0 hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 flex items-center gap-4 mt-10 max-sm:max-w-full max-sm:justify-center"
             >
               <Image src='/trophyIcon.png' alt="pad icon" width={36} height={36} />
               View Full Standings
-            </button>
+            </Link>
         </div>
-        <div className="min-w-160 p-10 bg-[#0B0F19] border border-foreground/10 rounded-2xl flex flex-col gap-2">
-          <div className="flex items-center justify-between pb-3 border-b border-foreground/10">
+        <div className="min-w-160 p-10 bg-[#0B0F19] border border-foreground/10 rounded-2xl flex flex-col gap-2 max-xl:min-w-0 max-xl:w-full max-md:p-5">
+          <div className="flex items-center justify-between pb-3 border-b border-foreground/10 max-sm:flex-wrap max-sm:gap-2">
             <h3 className="text-[19px]">Global Top Competitors</h3>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500">
@@ -295,14 +302,15 @@ export default function HomeScreen() {
         </div>
       </section>
 
-      <section className="p-24 bg-[#060A16] flex items-center inter-bold justify-between gap-20">
-        <div className="min-w-160 p-10 bg-[#0B0F19] border border-foreground/10 rounded-2xl flex flex-col gap-5">
+      {/* Stake Section */}
+      <section className="p-24 bg-[#060A16] flex items-center inter-bold justify-between gap-20 max-xl:flex-col max-xl:items-stretch max-xl:gap-10 max-xl:p-8 max-md:px-5 max-md:py-16">
+        <div className="min-w-160 p-10 bg-[#0B0F19] border border-foreground/10 rounded-2xl flex flex-col gap-5 max-xl:min-w-0 max-xl:w-full max-md:p-5">
           <div className="flex items-center gap-2">
             <Image src='/padlockIcon.png' alt="flash icon" width={22} height={22} />
             <h3 className="text-[21px]">Stake Calculator</h3>
           </div>
           <h3 className="inter-extralight text-[#A4B7EB] text-[11px]">SELECT ENTRY AMOUNT (GVT)</h3>
-          <div className="flex items-center gap-2 text-[13px]">
+          <div className="flex items-center gap-2 text-[13px] max-sm:flex-wrap">
             <button onClick={() => setStakeAmount(10)} className={`${stakeAmount === 10 ? 'bg-[#00D3FE1F] text-[#00D3FE] border-[#00D3FE] border-2' : 'bg-transparent border-foreground/10'} px-3 py-1.5 border  cursor-pointer rounded-lg`}>10</button>
             <button onClick={() => setStakeAmount(25)}  className={`${stakeAmount === 25 ? 'bg-[#00D3FE1F] text-[#00D3FE] border-[#00D3FE] border-2' : 'bg-transparent border-foreground/10'} px-3 py-1.5 border  cursor-pointer rounded-lg`}>25</button>
             <button onClick={() => setStakeAmount(50)}  className={`${stakeAmount === 50 ? 'bg-[#00D3FE1F] text-[#00D3FE] border-[#00D3FE] border-2' : 'bg-transparent border-foreground/10'} px-3 py-1.5 border cursor-pointer rounded-lg`}>50</button>
@@ -324,14 +332,14 @@ export default function HomeScreen() {
               <h3 className="text-[#00FF87]">{stakeAmount * 2 - (stakeAmount * 0.1)} GVT</h3>
             </div>
           </div>
-          <button className="px-6 py-3 rounded-lg text-[#02040A] bg-[#00D3FE] border border-[#20CEEE80] hover:shadow-lg hover:shadow-[#00D3FE4D] shadow cursor-pointer text-[14px] max-w-30 transition-all active:scale-95 flex items-center gap-4">
+          <Link href="/stake" className="px-6 py-3 rounded-lg text-[#02040A] bg-[#00D3FE] border border-[#20CEEE80] hover:shadow-lg hover:shadow-[#00D3FE4D] shadow cursor-pointer text-[14px] max-w-30 transition-all active:scale-95 flex items-center gap-4">
             Play Now
-          </button>
+          </Link>
         </div>
-        <div className="">
+        <div className="max-xl:w-full">
           <div className="flex flex-col gap-1.5">
             <h4 className="text-[13px] text-[#00D3FE]">ECONOMIC MODEL</h4>
-            <h3 className="text-[38px]">Dual-Stake Escrow. Winner Takes All.</h3>
+            <h3 className="text-[38px] max-md:text-[26px] max-md:leading-tight">Dual-Stake Escrow. Winner Takes All.</h3>
             <p className="text-[15px] text-[#A4B7EB] inter-extralight">Our smart contracts lock identical deposits from both players. Platform takes a 5% Platform Fee. Rest goes instantly to the victor.</p>
           </div>
           <div className="flex flex-col gap-4 mt-8">
@@ -360,14 +368,15 @@ export default function HomeScreen() {
         </div>
       </section>
 
-      <section className="py-28 flex flex-col gap-6 items-center inter-bold">
-        <div className="flex flex-col items-center gap-2">
+      {/* Reviews Section */}
+      <section className="py-28 flex flex-col gap-6 items-center inter-bold max-md:py-16">
+        <div className="flex flex-col items-center gap-2 max-xl:px-8 max-xl:text-center max-md:px-5">
           <h4 className="text-[13px] text-[#00D3FE]">TRUSTED REVIEWS</h4>
-          <h3 className="text-[38px]">Endorsed by Top Players</h3>
+          <h3 className="text-[38px] max-md:text-[26px] max-md:leading-tight">Endorsed by Top Players</h3>
           <p className="text-[15px] text-[#A4B7EB] inter-extralight">Discover what professional cyber athletes and protocol validators are saying about OLOS.</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 px-24 gap-6 mt-6 w-full">
-          <div className="flex flex-col gap-4 py-7 pl-8 pr-24 bg-[#0B0F19] border border-foreground/10 rounded-2xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 px-24 gap-6 mt-6 w-full max-xl:px-8 max-md:px-5 max-md:grid-cols-1!">
+          <div className="flex flex-col gap-4 py-7 pl-8 pr-24 bg-[#0B0F19] border border-foreground/10 rounded-2xl max-xl:pr-8 max-md:pl-6 max-md:pr-6">
             <div className="flex items-center gap-0.5">
               <Image src='/starIcon.png' alt="star icon" width={20} height={20} />
               <Image src='/starIcon.png' alt="star icon" width={20} height={20} />
@@ -384,7 +393,7 @@ export default function HomeScreen() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-4 py-7 pl-8 pr-24 bg-[#0B0F19] border border-foreground/10 rounded-2xl">
+          <div className="flex flex-col gap-4 py-7 pl-8 pr-24 bg-[#0B0F19] border border-foreground/10 rounded-2xl max-xl:pr-8 max-md:pl-6 max-md:pr-6">
             <div className="flex items-center gap-0.5">
               <Image src='/starIcon.png' alt="star icon" width={20} height={20} />
               <Image src='/starIcon.png' alt="star icon" width={20} height={20} />
@@ -404,45 +413,46 @@ export default function HomeScreen() {
         </div>
       </section>
 
-      <section className="relative z-10 p-24 bg-[#060A16] inter-bold flex flex-col gap-10 items-center">
-        <div className="flex flex-col items-center gap-2">
+      {/* Why OLOS Section */}
+      <section className="relative z-10 p-24 bg-[#060A16] inter-bold flex flex-col gap-10 items-center max-xl:p-8 max-md:px-5 max-md:py-16">
+        <div className="flex flex-col items-center gap-2 max-xl:text-center">
           <h4 className="text-[13px] text-[#00D3FE]">WHY OLOS?</h4>
-          <h3 className="text-[38px]">Built for Real-Time Competitive Gaming</h3>
+          <h3 className="text-[38px] max-md:text-[26px] max-md:leading-tight">Built for Real-Time Competitive Gaming</h3>
           <p className="text-[15px] text-[#A4B7EB] inter-extralight">Technical specs running the engine behind OLOS's zero-trust execution system.</p>
         </div>
         <div className="flex flex-col items-center w-full gap-3">
-          <div className="py-5 px-6 bg-[#0B0F19] border border-foreground/10 rounded-lg flex items-center w-full">
-            <h3 className='text-[#00D3FE] text-[15px] min-w-80'>Latency Tolerance</h3>
+          <div className="py-5 px-6 bg-[#0B0F19] border border-foreground/10 rounded-lg flex items-center w-full max-md:flex-col max-md:items-start max-md:gap-2">
+            <h3 className='text-[#00D3FE] text-[15px] min-w-80 max-md:min-w-0'>Latency Tolerance</h3>
             <p className="text-[13px] text-[#A4B7EB] inter-extralight">Sub-100ms state engine replication between multi-nodes.</p>
           </div>
-          <div className="py-5 px-6 bg-[#0B0F19] border border-foreground/10 rounded-lg flex items-center w-full">
-            <h3 className='text-[#00D3FE] text-[15px] min-w-80'>Fair Play & Instant Settlement</h3>
+          <div className="py-5 px-6 bg-[#0B0F19] border border-foreground/10 rounded-lg flex items-center w-full max-md:flex-col max-md:items-start max-md:gap-2">
+            <h3 className='text-[#00D3FE] text-[15px] min-w-80 max-md:min-w-0'>Fair Play & Instant Settlement</h3>
             <p className="text-[13px] text-[#A4B7EB] inter-extralight">Off-chain speed with on-chain payout security.</p>
           </div>
-            <div className="py-5 px-6 bg-[#0B0F19] border border-foreground/10 rounded-lg flex items-center w-full">
-              <h3 className='text-[#00D3FE] text-[15px] min-w-80'>Multi-Chain Support</h3>
+            <div className="py-5 px-6 bg-[#0B0F19] border border-foreground/10 rounded-lg flex items-center w-full max-md:flex-col max-md:items-start max-md:gap-2">
+              <h3 className='text-[#00D3FE] text-[15px] min-w-80 max-md:min-w-0'>Multi-Chain Support</h3>
               <p className="text-[13px] text-[#A4B7EB] inter-extralight">Connect with Ethereum, Arbitrum, Base, or Polygon.</p>
             </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-40 text-center flex flex-col items-center gap-10 inter-bold">
+      <section className="py-40 text-center flex flex-col items-center gap-10 inter-bold max-md:py-20 max-md:px-5">
         <div className=" border-white/5">
-        <h2 className="text-4xl md:text-[42px] font-black mb-4 text-white">Ready to Prove Your Skills?</h2>
+        <h2 className="text-4xl md:text-[42px] font-black mb-4 text-white max-sm:text-[28px]">Ready to Prove Your Skills?</h2>
         <p className="text-[#A4B7EB] mb-12 text-[15px] inter-extralight">No email or registration required. Connect your wallet to stake, or practice completely free.</p>
         
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-4 max-sm:flex-col">
               <Link
-                href=""
-                className="px-8 py-3 rounded-lg text-[#02040A] bg-[#00D3FE] hover:bg-[#00D3FE]/60 text-[14px] font-bold transition-all active:scale-95 inter-bold flex items-center gap-1"
+                href="/wallet"
+                className="px-8 py-3 rounded-lg text-[#02040A] bg-[#00D3FE] hover:bg-[#00D3FE]/60 text-[14px] font-bold transition-all active:scale-95 inter-bold flex items-center gap-1 max-sm:justify-center"
               >
                 <Image src='/padIcon.png' alt="pad icon" width={32} height={32} />
                 <h3 className="mt-1">Connect Wallet & Play</h3>
               </Link>
               <Link
                 href=""
-                className="px-10 py-3 rounded-lg text-white border border-[#20CEEE80] hover:border-0 hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 flex items-center gap-2"
+                className="px-10 py-3 rounded-lg text-white border border-[#20CEEE80] hover:border-0 hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 flex items-center gap-2 max-sm:justify-center"
               >
                 <Image src='/trophyIcon.png' alt="pad icon" width={32} height={32} />
                 Read Whitepaper
@@ -451,26 +461,31 @@ export default function HomeScreen() {
         </div>
       </section>
 
-      <footer className="py-24 px-20 bg-[#010101] inter-normal">
-        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-4">
+      <footer className="py-24 px-20 bg-[#010101] inter-normal max-xl:px-8 max-md:px-6 max-md:py-14">
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-4 max-lg:gap-10 md:max-lg:grid-cols-2!">
           <div className="flex flex-col gap-4">
             <Image src='/OLOS_logo.svg' alt="logo" width={140} height={48} />
             <p className="text-[#A4B7EB] text-[16px] leading-8">
               Web3 skill gaming , Compete,<br /> Stake and earn -your reputation <br /> lives on-chain
             </p>
             <div className="flex items-center gap-2 mt-1">
+              {/* x social media link */}
               <Link
-                href=""
+                href="https://x.com/olosgaming?s=21"
+                target="_blank"
                 className="px-5 py-2 rounded-lg text-white border border-foreground/10 hover:border-[#A4B7EB] hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 flex items-center gap-2"
               >
                 <Image src='/Xlogo.png' alt="twitter icon" width={12} height={12} />
               </Link>
+              {/* Slack social media link */}
               <Link
-                href=""
+                href="https://olosworld.slack.com"
+                target="_blank"
                 className="px-5 py-2 rounded-lg text-white border border-foreground/10 hover:border-[#A4B7EB] hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 flex items-center gap-2"
               >
                 <Image src='/devicon_slack.png' alt="discord icon" width={12} height={12} />
               </Link>
+              {/* Telegram social media link */}
               <Link
                 href=""
                 className="px-5 py-2 rounded-lg text-white border border-foreground/10 hover:border-[#A4B7EB] hover:bg-gray-800 text-[14px] font-bold transition-all active:scale-95 flex items-center gap-2"
@@ -479,36 +494,38 @@ export default function HomeScreen() {
               </Link>
             </div>
           </div>
+
+          {/* games link */}
           <div className="flex flex-col">
             <ul>
               <h3 className="inter-extrabold text-[19px]">Games</h3>
               <li className="mt-2">
-                <Link href="" className="text-[15px] text-[#A4B7EB]">
+                <Link href="/games" className="text-[15px] text-[#A4B7EB]">
                   Snake Xenzia
                 </Link>
               </li>
               <li className="mt-2">
-                <Link href="" className="text-[15px] text-[#A4B7EB]">
+                <Link href="/games" className="text-[15px] text-[#A4B7EB]">
                   Chess Arena
                 </Link>
               </li>
               <li className="mt-2">
-                <Link href="" className="text-[15px] text-[#A4B7EB]">
+                <Link href="/games" className="text-[15px] text-[#A4B7EB]">
                   Tetris Blitz
                 </Link>
               </li>
               <li className="mt-2">
-                <Link href="" className="text-[15px] text-[#A4B7EB]">
+                <Link href="/games" className="text-[15px] text-[#A4B7EB]">
                   Bounce King
                 </Link>
               </li>
               <li className="mt-2">
-                <Link href="" className="text-[15px] text-[#A4B7EB]">
+                <Link href="/games" className="text-[15px] text-[#A4B7EB]">
                   Jumping Jack
                 </Link>
               </li>
               <li className="mt-2">
-                <Link href="" className="text-[15px] text-[#A4B7EB]">
+                <Link href="/games" className="text-[15px] text-[#A4B7EB]">
                   Checkers Rush
                 </Link>
               </li>
@@ -518,7 +535,7 @@ export default function HomeScreen() {
             <ul>
               <h3 className="inter-extrabold text-[19px]">Platform</h3>
               <li className="mt-2">
-                <Link href="" className="text-[15px] text-[#A4B7EB]">
+                <Link href="/leaderboard" className="text-[15px] text-[#A4B7EB]">
                   Leaderboard
                 </Link>
               </li>
@@ -585,7 +602,7 @@ export default function HomeScreen() {
             </ul>
           </div>
         </div>
-        <div className="w-full flex items-center justify-between mt-10 pr-60">
+        <div className="w-full flex items-center justify-between mt-10 pr-60 max-xl:pr-0 max-md:flex-col max-md:items-start max-md:gap-3">
           <p className="text-[14px] text-[#A4B7EB]">© 2026 OLOS Gaming Platform. All rights reserved</p>
           <p className="text-[14px] text-[#A4B7EB]">Powered by GVT Token · EVM Smart Contracts</p>
         </div>
@@ -608,18 +625,18 @@ function Step({ number, title, description }: { number: string; title: string; d
 
 function UserRanking({ Ranking, username, userIcon, userWins, userPoints, color }: { Ranking: number; username: string; userIcon: string; userWins: number; userPoints: number,color: string }) {
   return (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex items-center gap-4">
+    <div className="flex items-center justify-between w-full max-sm:gap-2">
+      <div className="flex items-center gap-4 max-sm:gap-2">
         <h3 style={{color: color}} className="text-[15px]">#{Ranking}</h3>
         <div className="flex items-center">
-          <Image src={userIcon} alt="user icon" width={44} height={54} className="rounded-full" />
-          <div className='flex flex-col ml-4'>
+          <Image src={userIcon} alt="user icon" width={44} height={54} className="rounded-full max-sm:shrink-0 max-sm:w-9 max-sm:h-auto" />
+          <div className='flex flex-col ml-4 max-sm:ml-2 max-sm:min-w-0'>
             <h4 className="text-white text-[15px]">{username}</h4>
             <p className="text-[#6B7280] text-[11px]">{userWins} wins</p>
           </div>
         </div>
       </div>
-      <h3 className="text-[#FFB800]">{userPoints} GVT</h3>
+      <h3 className="text-[#FFB800] max-sm:text-[13px] max-sm:shrink-0">{userPoints} GVT</h3>
     </div>
   );
 }
@@ -644,7 +661,7 @@ function GameCard({ image, title, description }: { image: string; title: string;
 
 function NewGameCard({ image, title, description, liveNumber, minStake, volatility, color }: { image: string; title: string; description: string; liveNumber: number; minStake: number; volatility: string; color: string }) {
   return (
-    <div className="flex flex-col bg-[#0a0f1e] rounded-3xl border border-blue-500/10 overflow-hidden group hover:border-blue-500/30 transition-all hover:translate-y-[-4px]">
+    <div className="flex flex-col bg-[#0a0f1e] rounded-3xl border border-blue-500/10 overflow-hidden group hover:border-blue-500/30 transition-all hover:-translate-y-1">
       <div className="aspect-[1.4] overflow-hidden">
         <img src={image} alt={title} className="w-full h-full object-cover transition-all border-[#A4B7EB] border-l-2 border-2 duration-300" />
         {/* <img src={image} alt={title} className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" /> */}
@@ -669,7 +686,7 @@ function NewGameCard({ image, title, description, liveNumber, minStake, volatili
             <h3 className="text-[14px]" style={{ color }}>{volatility}</h3>
           </div>
         </div>
-        <button className="px-5 py-3 rounded-lg text-[11px] text-[#02040A] uppercase transition-all cursor-pointer" style={{ backgroundColor: color }}>Enter Arena</button>
+        <Link href="/games" className="px-5 py-3 rounded-lg text-[11px] text-[#02040A] uppercase transition-all cursor-pointer" style={{ backgroundColor: color }}>Enter Arena</Link>
         {/* <div className="flex gap-2">
           <button className="px-5 py-1.5 rounded-full border border-blue-500/20 text-[11px] font-black uppercase text-blue-500 hover:bg-blue-500 hover:text-white transition-all">1v1</button>
         </div> */}
@@ -704,7 +721,7 @@ function BackToTop() {
     <button
       onClick={scrollToTop}
       aria-label="Back to top"
-      className={`fixed bottom-8 right-8 z-50 p-3 rounded-full bg-[#0B0F19] border border-[#20CEEE80] text-[#00D3FE] shadow-lg shadow-[#00D3FE1A] transition-all duration-300 cursor-pointer hover:bg-[#00D3FE] hover:text-[#02040A] ${
+      className={`fixed bottom-8 right-8 z-50 p-3 rounded-full bg-[#0B0F19] border border-[#20CEEE80] text-[#00D3FE] shadow-lg shadow-[#00D3FE1A] transition-all duration-300 cursor-pointer hover:bg-[#00D3FE] hover:text-[#02040A] max-sm:bottom-4 max-sm:right-4 ${
         visible ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}
     >
