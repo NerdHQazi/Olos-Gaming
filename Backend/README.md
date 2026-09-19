@@ -109,10 +109,13 @@ This will attempt a read query to the `profiles` table and print success/failure
 ### Development Mode (with auto-reload)
 
 ```bash
+cd Backend
 npm run dev
 ```
 
-The server will start on `http://localhost:5000` and automatically reload when source files change.
+The server starts at **`http://localhost:5000`**. This is the local backend URL the frontend should use during development (set `NEXT_PUBLIC_BACKEND_URL=http://localhost:5000` in `website/.env.local`).
+
+> **No confirmed production backend URL:** The backend has not been deployed to a permanent production host. Do not hard-code any external URL unless a deployment has been explicitly provisioned and confirmed.
 
 ### Production Mode
 
@@ -300,12 +303,70 @@ In development, error details are returned; in production, they are hidden.
 
 ## Authentication Flow
 
-1. **Frontend** sends email/password to `POST /api/auth/signup` or `POST /api/auth/login`
+### Email/Password (Express Backend)
+
+The Express backend handles only email/password signup and login:
+
+1. **Frontend** sends credentials to `POST /api/auth/signup` or `POST /api/auth/login`
 2. **Backend** validates input with Zod schemas
-3. **Backend** forwards credentials to Supabase Auth via the service role key
-4. **Supabase** creates auth user and triggers provisioning trigger (see below)
+3. **Backend** calls Supabase Auth via the service role key (`supabase.auth.signUp` / `supabase.auth.signInWithPassword`)
+4. **Supabase** creates the auth user and triggers the provisioning trigger (creates `profiles` + `wallets` rows)
 5. **Backend** returns session token and user data to frontend
-6. **Frontend** stores session in localStorage, uses token for subsequent requests to Supabase Edge Functions
+6. **Frontend** stores the session and uses the access token for subsequent Supabase requests
+
+---
+
+### Google OAuth — Supabase Client SDK (Frontend Only)
+
+Google OAuth is **not** routed through the Express backend. It is handled entirely by the Supabase client SDK on the frontend.
+
+**Frontend flow:**
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+// Trigger Google sign-in
+const { error } = await supabase.auth.signInWithOAuth({
+  provider: 'google',
+  options: {
+    redirectTo: `${window.location.origin}/auth/callback`,
+  },
+});
+```
+
+1. Frontend calls `supabase.auth.signInWithOAuth({ provider: 'google' })`
+2. Supabase redirects the user to Google's OAuth consent screen
+3. After consent, Google redirects back to your configured Supabase callback URL
+4. Supabase exchanges the OAuth code for a session and redirects to your app's `redirectTo` URL
+5. Frontend picks up the session (via `supabase.auth.getSession()` or `onAuthStateChange`)
+6. If this is the user's first login, the Supabase provisioning trigger fires and creates `profiles` + `wallets` rows
+
+> **Backend involvement:** None. Do not call any Express endpoint for Google OAuth. The Supabase project must have Google as an enabled OAuth provider in the Supabase dashboard.
+
+---
+
+### Password Reset — Supabase Client SDK (Frontend Only)
+
+Password reset is **not** routed through the Express backend. It is handled entirely by the Supabase client SDK.
+
+**Frontend flow:**
+
+```typescript
+// Step 1: Request a password reset email
+const { error } = await supabase.auth.resetPasswordForEmail(
+  'user@example.com',
+  { redirectTo: `${window.location.origin}/auth/update-password` }
+);
+```
+
+1. Frontend calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: '...' })`
+2. Supabase sends a password-reset email to the user with a secure link
+3. User clicks the link and is redirected to your app's `redirectTo` URL with a recovery token in the URL
+4. Frontend detects the session type `'PASSWORD_RECOVERY'` via `onAuthStateChange` and shows the new-password form
+5. User submits a new password; frontend calls `supabase.auth.updateUser({ password: newPassword })`
+6. Supabase updates the user's password and the session remains active
+
+> **Backend involvement:** None. Do not call any Express endpoint for password reset. The Supabase project's email templates must be configured for the reset flow.
 
 ---
 
@@ -436,7 +497,7 @@ node Backend/scripts/validate_phase7_1v1_regression.js
 
 These scripts use QA credentials from `.env.qa.local` and test against the linked Supabase project.
 
----
+---            
 
 ## Error Handling Middleware
 
@@ -525,16 +586,20 @@ For now, manual testing via curl or the frontend is the primary validation metho
 
 ## Deployment
 
+> **Status:** The backend is currently available for **local development only**. There is no confirmed production deployment. Do not use or document any external URL as the production backend URL until a deployment has been explicitly provisioned.
+
 ### Environment Variables
 
-Set these in your hosting platform (Vercel, Render, etc.):
+When deploying, set these in your hosting platform:
 
 ```
-SUPABASE_URL=...
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=...
 PORT=5000
 NODE_ENV=production
 ```
+
+Also update the frontend's `NEXT_PUBLIC_BACKEND_URL` environment variable in your hosting platform (e.g., Vercel) to point to the deployed backend URL.
 
 ### Build & Run
 
