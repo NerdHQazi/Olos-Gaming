@@ -31,35 +31,35 @@ const navigation = [
   },
   {
     label: "Game",
-    href: "/game",
+    href: "/dashboard/game",
     icon: Gamepad2,
     active: true,
   },
   {
     label: "Leaderboard",
-    href: "/leaderboard",
+    href: "/dashboard/leaderboard",
     icon: Trophy,
     color: "gold",
   },
   {
     label: "Tournaments",
-    href: "/tournaments",
+    href: "/dashboard/tournaments",
     icon: Trophy,
     color: "gold",
   },
   {
     label: "Token",
-    href: "/token",
+    href: "/dashboard/token",
     icon: RiCoinsFill,
   },
   {
     label: "Wallet",
-    href: "/wallet",
+    href: "/dashboard/wallet",
     icon: Wallet,
   },
   {
     label: "Profile",
-    href: "/profile",
+    href: "/dashboard/profile",
     icon: UserRound,
   },
   {
