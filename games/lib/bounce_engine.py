@@ -78,6 +78,80 @@ class Player(pygame.sprite.Sprite):
                 self.pos.y = hits[0].rect.top + 1
 
 
+class Projectile(pygame.sprite.Sprite):
+    """A projectile that travels in a straight line until it leaves the world.
+
+    Follows the existing engine sprite convention (surf / rect / pos / vel).
+    It stays `active` while flying; leave the screen or call `deactivate()`
+    and it becomes inactive / ready for removal.
+    """
+    def __init__(self, pos, vel=vec(0, 0), size=(10, 10),
+                 color=(255, 255, 0), damage=1):
+        super().__init__()
+        self.surf = pygame.Surface(size)
+        self.surf.fill(color)
+        self.rect = self.surf.get_rect(center=pos)
+        self.pos = vec(pos)
+        self.vel = vec(vel)
+        self.damage = damage
+        self.active = True
+
+    def update(self):
+        if not self.active:
+            return
+        self.pos += self.vel
+        self.rect.center = self.pos
+        if (self.rect.right < 0 or self.rect.left > WIDTH or
+                self.rect.bottom < 0 or self.rect.top > HEIGHT):
+            self.active = False
+
+    def draw(self, surface):
+        if self.active:
+            surface.blit(self.surf, self.rect)
+
+    def deactivate(self):
+        self.active = False
+
+
+class Enemy(pygame.sprite.Sprite):
+    """A simple patrolling enemy that walks back and forth.
+
+    Basic lifecycle only: it stays `alive` until its health runs out (e.g.
+    after being hit by a Projectile), at which point it stops updating.
+    """
+    def __init__(self, pos, speed=1.5, patrol_range=60, size=(30, 30),
+                 color=(200, 60, 60), health=1):
+        super().__init__()
+        self.surf = pygame.Surface(size)
+        self.surf.fill(color)
+        self.rect = self.surf.get_rect(center=pos)
+        self.pos = vec(pos)
+        self.speed = speed
+        self.direction = 1
+        self.start_x = self.pos.x
+        self.patrol_range = patrol_range
+        self.health = health
+        self.alive = True
+
+    def update(self):
+        if not self.alive:
+            return
+        self.pos.x += self.speed * self.direction
+        if abs(self.pos.x - self.start_x) >= self.patrol_range:
+            self.direction *= -1
+        self.rect.center = self.pos
+
+    def draw(self, surface):
+        if self.alive:
+            surface.blit(self.surf, self.rect)
+
+    def take_damage(self, amount=1):
+        self.health -= amount
+        if self.health <= 0:
+            self.alive = False
+        return self.alive
+
+
 PT1 = platform()
 P1 = Player()
 
