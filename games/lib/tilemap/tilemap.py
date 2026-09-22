@@ -1,10 +1,41 @@
 import pygame
+import numpy as np
+from pygame.locals import *
+
+class Tileset: #Fetches the tileset to be used
+    def __init__(self, file, size=(32, 32), margin=1, spacing=1):
+        self.file = file
+        self.size = size
+        self.margin = margin
+        self.spacing = spacing
+        self.image = pygame.image.load(file)
+        self.rect = self.image.get_rect()
+        self.tiles = []
+        self.load()
+
+
+    def load(self):
+
+        self.tiles = []
+        x0 = y0 = self.margin
+        w, h = self.rect.size
+        dx = self.size[0] + self.spacing
+        dy = self.size[1] + self.spacing
+        
+        for x in range(x0, w, dx):
+            for y in range(y0, h, dy):
+                tile = pygame.Surface(self.size)
+                tile.blit(self.image, (0, 0), (x, y, *self.size))
+                self.tiles.append(tile)
+
+    def __str__(self):
+        return f'{self.__class__.__name__} file:{self.file} tile:{self.size}'
 
 class imageTileMap: #Fetches an image tilemap instead of a colour tilemap based on the provided file
     def __init__(self, tileset, width = 10, height = 10, rect = None):
         self.size = (height, width)
         self.tileset = tileset #some image reference
-        self.map = np.zeros(size, dtype=int)
+        self.map = np.zeros(self.size, dtype=int)
         
         h, w = self.size
         self.image = pygame.Surface((32*w, 32*h)) #32 because of the size of the tiles being tested. however, in full deployment, 32 becomes itself a variable.
