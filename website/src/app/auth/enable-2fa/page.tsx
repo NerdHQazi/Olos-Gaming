@@ -1,15 +1,37 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import AuthPageShell from '@/components/auth/AuthPageShell';
 import AuthCard from '@/components/auth/AuthCard';
-import AuthButton from '@/components/auth/AuthButton';
-import AuthIcon from '@/components/auth/AuthIcon';
 
-function ChevronRight() {
+function CompassIcon() {
+  // Gradient ring (purple -> cyan) via padding trick: outer div carries the
+  // gradient as its background, inner div is the dark fill, leaving a thin
+  // gradient "border" showing through.
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M9 6l6 6-6 6" />
-    </svg>
+    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#7135DB] to-[#22D3EE] p-[1.5px]">
+      <div className="w-full h-full rounded-full bg-[#0B1121] flex items-center justify-center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#22D3EE">
+          <path d="M12 2l7 4v6l-7 10-7-10V6l7-4z" opacity="0" />
+          <path d="M19 5L5 11l6.2 2.2L13.6 19 19 5z" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+function AuthenticatorIcon() {
+  return (
+    <div className="w-10 h-10 rounded-lg bg-[#7135DB]/25 flex items-center justify-center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#7135DB">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7v1H4v-1z" />
+      </svg>
+    </div>
+  );
+}
+function SmsIcon() {
+  return (
+    <div className="w-10 h-10 rounded-lg bg-[#22D3EE]" />
   );
 }
 
@@ -18,71 +40,87 @@ type Method = 'authenticator' | 'sms';
 export default function Enable2FAPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<Method | null>(null);
-  const [loading, setLoading] = useState(false);
 
+  // NOTE: your backend (authController.js) has no 2FA enrollment endpoint yet —
+  // there's nothing to call here. This just records the choice locally and
+  // continues to /wallet (same destination as a plain signin) so onboarding
+  // isn't blocked on backend work that doesn't exist. When a real endpoint
+  // exists, wire handleContinue to call it here.
   const handleContinue = () => {
     if (!selected) return;
-    setLoading(true);
-    // TODO: kick off the chosen 2FA enrollment flow
-    setTimeout(() => {
-      router.push('/auth/loading');
-    }, 800);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('olos_2fa_preference', selected);
+    }
+    router.push('/wallet');
   };
 
   return (
-    <AuthCard>
-      <div className="flex flex-col items-center text-center max-w-md mx-auto">
-        <AuthIcon name="phone" size={130} />
+    <AuthPageShell>
+      <AuthCard>
+        <div className="flex flex-col items-center text-center max-w-2xl mx-auto">
+          <CompassIcon />
+          <p className="text-[11px] font-bold tracking-[0.2em] text-[#22D3EE] mt-3">SECURITY SETUP</p>
+          <h1 className="text-2xl md:text-3xl font-black text-white mt-2">Two-Factor Authentication</h1>
+          <p className="text-sm text-gray-400 mt-2 max-w-md">
+            Keep your account safe with an extra layer of security. Pick how you want to verify your identity.
+          </p>
 
-        <h1 className="text-2xl md:text-3xl font-black text-white mt-6">Enable 2FA</h1>
-        <p className="text-sm text-gray-400 mt-2">
-          Add an extra layer of security to your account
-        </p>
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+            <button
+              type="button"
+              onClick={() => setSelected('authenticator')}
+              className={`text-left rounded-2xl border p-5 transition-all ${
+                selected === 'authenticator' ? 'border-[#7135DB] bg-[#7135DB]/10' : 'border-[#361F6B] bg-[#0B1121] hover:border-white/20'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <AuthenticatorIcon />
+                <span className="text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full bg-[#0B2A3C] text-[#22D3EE] border border-[#22D3EE]/40">
+                  RECOMMENDED
+                </span>
+              </div>
+              <p className="font-bold text-white">Authenticator App</p>
+              <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+                Get a login code from an app on your phone. Works even without internet — the most secure option.
+              </p>
+            </button>
 
-        <div className="w-full mt-8 space-y-4">
-          <button
-            type="button"
-            onClick={() => setSelected('authenticator')}
-            className={`w-full h-16 rounded-xl border flex items-center justify-between px-4 transition-all ${
-              selected === 'authenticator' ? 'border-[#169EFA] bg-[#169EFA]/10' : 'border-[#3B82F6]/30 bg-black'
-            }`}
-          >
-            <span className="flex items-center gap-3 text-white font-semibold">
-              <span className="text-xl">🔐</span>
-              Google Authentication
-              <span className="text-green-500 text-sm font-semibold">Recommended</span>
-            </span>
-            <ChevronRight />
-          </button>
+            <button
+              type="button"
+              onClick={() => setSelected('sms')}
+              className={`text-left rounded-2xl border p-5 transition-all ${
+                selected === 'sms' ? 'border-[#22D3EE] bg-[#22D3EE]/10' : 'border-[#361F6B] bg-[#0B1121] hover:border-white/20'
+              }`}
+            >
+              <div className="mb-4">
+                <SmsIcon />
+              </div>
+              <p className="font-bold text-white">SMS Verification</p>
+              <p className="text-xs text-gray-400 mt-1.5 leading-relaxed">
+                Get a one-time code sent to your phone number. Quick and easy to set up.
+              </p>
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setSelected('sms')}
-            className={`w-full h-16 rounded-xl border flex items-center justify-between px-4 transition-all ${
-              selected === 'sms' ? 'border-[#169EFA] bg-[#169EFA]/10' : 'border-[#3B82F6]/30 bg-black'
-            }`}
-          >
-            <span className="flex items-center gap-3 text-white font-semibold">
-              <span className="text-xl">💬</span>
-              SMS Verification
-            </span>
-            <ChevronRight />
-          </button>
+          <div className="w-full mt-6 space-y-3">
+            <button
+              type="button"
+              onClick={handleContinue}
+              disabled={!selected}
+              className="w-full h-12 rounded-xl font-bold tracking-wide text-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed bg-[#22D3EE] text-[#0B0060] hover:opacity-90"
+            >
+              ENABLE PROTECTION
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/wallet')}
+              className="text-xs font-bold tracking-wide text-gray-500 hover:text-gray-300"
+            >
+              MAYBE LATER
+            </button>
+          </div>
         </div>
-
-        <div className="w-full mt-8 space-y-4">
-          <AuthButton variant={selected ? 'primary' : 'outline'} disabled={!selected} loading={loading} onClick={handleContinue}>
-            Continue
-          </AuthButton>
-          <button
-            type="button"
-            onClick={() => router.push('/auth/loading')}
-            className="text-sm text-gray-400 hover:text-gray-200"
-          >
-            Maybe Later
-          </button>
-        </div>
-      </div>
-    </AuthCard>
+      </AuthCard>
+    </AuthPageShell>
   );
 }

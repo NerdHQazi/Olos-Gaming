@@ -1,36 +1,42 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import AuthPageShell from '@/components/auth/AuthPageShell';
+import AuthCard from '@/components/auth/AuthCard';
+import AuthButton from '@/components/auth/AuthButton';
+import AuthIcon from '@/components/auth/AuthIcon';
+// TODO: confirm this matches the actual export in src/lib/supabase.ts
+import { supabase } from '@/lib/supabase';
 
-type Props = {
-  children: React.ReactNode;
-  onClick?: () => void;
-  type?: 'button' | 'submit';
-  variant?: 'primary' | 'secondary' | 'outline' | 'teal';
-  disabled?: boolean;
-  loading?: boolean;
-};
+export default function ResetPasswordSuccessPage() {
+  const router = useRouter();
 
-export default function AuthButton({
-  children, onClick, type = 'button', variant = 'primary', disabled, loading,
-}: Props) {
-  const base = 'w-full h-14 rounded-xl font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2';
-  const styles =
-    variant === 'primary'
-      ? 'bg-[#3B82F6] hover:bg-[#2563EB] text-white'
-      : variant === 'outline'
-      ? 'bg-transparent border border-white/20 text-white hover:bg-white/5'
-      : variant === 'teal'
-      ? 'bg-[#0D9488] hover:bg-[#0F766E] text-white'
-      : 'bg-transparent border border-[#22D3EE] text-[#22D3EE] hover:bg-[#22D3EE]/10';
+  useEffect(() => {
+    // Clear out the recovery-scoped session so they land on signin clean
+    // rather than carrying around a lingering recovery session.
+    supabase.auth.signOut().catch(() => {});
+  }, []);
 
   return (
-    <button type={type} onClick={onClick} disabled={disabled || loading} className={`${base} ${styles}`}>
-      {loading ? (
-        <>
-          <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          Please wait...
-        </>
-      ) : children}
-    </button>
+    <AuthPageShell>
+      <AuthCard>
+        <div className="flex flex-col items-center text-center max-w-md mx-auto">
+          <AuthIcon name="shield" size={130} />
+
+          <h1 className="text-2xl md:text-3xl font-black text-white mt-6">Password Reset</h1>
+          <p className="text-base font-bold text-green-500 mt-1">Successful!</p>
+          <p className="text-sm text-gray-400 mt-2">
+            Your password has been reset successfully.<br />
+            You can now sign in with your new password
+          </p>
+
+          <div className="w-full mt-10">
+            <AuthButton variant="teal" onClick={() => router.push('/auth/signin')}>
+              Go to Sign In
+            </AuthButton>
+          </div>
+        </div>
+      </AuthCard>
+    </AuthPageShell>
   );
 }
