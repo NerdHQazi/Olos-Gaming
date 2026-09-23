@@ -132,8 +132,13 @@ def normal_moves(board, r, c):
     return moves
 
 
-def _explore_captures(board, r, c, piece, captured_so_far):
-    """Recursively yield all capture chains starting from (r, c)."""
+def _explore_captures(board, r, c, piece, captured_so_far, origin=None):
+    """Recursively yield all capture chains starting from (r, c).
+    `origin` is the true starting square of the piece so that every generated
+    move object has the correct 'from' field even during multi-jump chains.
+    """
+    if origin is None:
+        origin = (r, c)
     found = False
     results = []
     for dr, dc in _jump_dirs(piece):
@@ -150,11 +155,11 @@ def _explore_captures(board, r, c, piece, captured_so_far):
                 and (jr, jc) not in captured_so_far):
             found = True
             new_cap = captured_so_far + [(jr, jc)]
-            sub = _explore_captures(board, lr, lc, piece, new_cap)
+            sub = _explore_captures(board, lr, lc, piece, new_cap, origin)
             if sub:
                 results.extend(sub)
             else:
-                results.append({'from': (r, c), 'to': (lr, lc),
+                results.append({'from': origin, 'to': (lr, lc),
                                 'captured': new_cap, 'is_capture': True,
                                 'promotes': _will_promote(piece, lr)})
     if not found and captured_so_far:
@@ -439,7 +444,8 @@ class CheckersGame:
                 s['legal_moves'] = []
             return
 
-        # Apply the move
+        # Apply the move (captures are fully pre-computed by _explore_captures,
+        # so a single click on the final landing square completes all jumps)
         s['board'] = apply_move(s['board'], move)
         s['move_count'] += 1
         if move['is_capture']:
@@ -447,27 +453,21 @@ class CheckersGame:
         else:
             s['moves_no_cap'] += 1
 
-        # Check for follow-up captures (multi-jump)
-        follow_up = capture_moves(s['board'], r, c) if move['is_capture'] else []
-
-        if follow_up:
-            s['must_continue'] = True
-            s['chain_piece']   = (r, c)
-            s['selected']      = (r, c)
-            s['legal_moves']   = follow_up
-        else:
-            s['must_continue'] = False
-            s['chain_piece']   = None
-            s['selected']      = None
-            s['legal_moves']   = []
-            # Switch player
-            s['current_player'] = opponent(s['current_player'])
-            # Check game over
-            over, result = check_game_over(s['board'], s['current_player'],
-                                           s['moves_no_cap'])
-            if over:
-                s['status'] = 'finished'
-                s['result'] = result
+        # Since _explore_captures already embeds the full chain in one move,
+        # there are never true follow-up captures to handle here.
+        # Always end the turn after applying the move.
+        s['must_continue'] = False
+        s['chain_piece']   = None
+        s['selected']      = None
+        s['legal_moves']   = []
+        # Switch player
+        s['current_player'] = opponent(s['current_player'])
+        # Check game over
+        over, result = check_game_over(s['board'], s['current_player'],
+                                       s['moves_no_cap'])
+        if over:
+            s['status'] = 'finished'
+            s['result'] = result
 
     # ── Render ─────────────────────────────────
     def render(self):
