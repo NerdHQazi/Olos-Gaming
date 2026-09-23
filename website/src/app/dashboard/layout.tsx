@@ -6,6 +6,7 @@ import {
   ChevronDown,
   CircleHelp,
   Gamepad2,
+  Store,
   LayoutDashboard,
   Menu,
   Trophy,
@@ -56,6 +57,11 @@ const navigation = [
     label: "Wallet",
     href: "/dashboard/wallet",
     icon: Wallet,
+  },
+  {
+    label: "Marketplace",
+    href: "/dashboard/marketplace",
+    icon: Store,
   },
   {
     label: "Profile",
@@ -116,12 +122,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex h-[68px] items-center justify-between border-b border-[#151d35] px-5">
             <a href="/dashboard" className="flex items-center gap-2">
               <div className="relative">
-                <div className="text-[20px] font-black tracking-tight text-[#20ceee]">
+                {/* <div className="text-[20px] font-black tracking-tight text-[#20ceee]">
                   OLOS
                 </div>
                 <div className="absolute -right-7 -top-1 rounded border border-[#33405e] px-1 py-[1px] text-[6px] font-bold text-[#7783a5]">
                   BETA
-                </div>
+                </div> */}
+                <Image
+                  src="/OLOS_logo.svg"
+                  alt="Olos Logo"
+                  width={120}
+                  height={120}
+                  className="w-auto"
+                />
               </div>
             </a>
 
@@ -277,8 +290,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 bg-[#03060d]">
-            <div className="mx-auto w-full max-w-[1200px]">{children}</div>
+          <main className="min-w-0 flex-1 bg-[#03060d] overflow-y-auto">
+            <div className="mx-auto w-full max-w-300">{children}</div>
           </main>
         </div>
       </div>
