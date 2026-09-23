@@ -6,9 +6,9 @@
   --font-sans: var(--font-inter), sans-serif;
   --font-bai: var(--font-bai-jamjuree), sans-serif;
 
-  --color-background: #0B1121;
+  --color-background: #0b1121;
   --color-foreground: #ffffff;
-  
+
   --color-olos-blue: #0076ff;
   --color-olos-cobalt: #0061d1;
   --color-olos-neon: #00d2ff;
@@ -19,8 +19,12 @@
   --animate-float: float 6s ease-in-out infinite;
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes fadeInUp {
@@ -35,13 +39,18 @@
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
   }
 }
 
 :root {
-  --background: #0B1121;
+  --background: #0b1121;
   --foreground: #ffffff;
 }
 
@@ -51,11 +60,19 @@ body {
   font-family: var(--font-sans);
 }
 
-@layer utilities {
+button {
+  cursor: pointer;
+}
 
+@layer utilities {
   /* Exact Headline Gradient */
   .text-gradient-hero {
-    background: linear-gradient(90deg, #20CEEE 12.35%, #134086 40.87%, #20CEEE 70.67%);
+    background: linear-gradient(
+      90deg,
+      #20ceee 12.35%,
+      #134086 40.87%,
+      #20ceee 70.67%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -78,15 +95,15 @@ body {
     inset: 0;
     border-radius: 9999px;
     padding: 2.75px; /* Border width */
-    background: linear-gradient(180deg, #274DB4 0%, #2270D9 100%);
-    -webkit-mask: 
-       linear-gradient(#fff 0 0) content-box, 
-       linear-gradient(#fff 0 0);
+    background: linear-gradient(180deg, #274db4 0%, #2270d9 100%);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
   }
-  
+
   .btn-primary-hero:hover {
     box-shadow: 0 0 20px rgba(34, 112, 217, 0.4);
   }
@@ -107,10 +124,10 @@ body {
     inset: 0;
     border-radius: 9999px;
     padding: 2.75px; /* Border width */
-    background: linear-gradient(180deg, #274DB4 0%, #2270D9 100%);
-    -webkit-mask: 
-       linear-gradient(#fff 0 0) content-box, 
-       linear-gradient(#fff 0 0);
+    background: linear-gradient(180deg, #274db4 0%, #2270d9 100%);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
@@ -123,5 +140,67 @@ body {
   /* Logo Glow Effect */
   .logo-glow {
     filter: drop-shadow(0 0 30px rgba(32, 206, 238, 0.25));
+  }
+
+  .inter-extralight{
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 300;
+    font-style: normal;
+  }
+  .inter-light{
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+  }
+  .inter-normal{
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
+  }
+  .inter-semibold{
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-style: normal;
+  }
+  .inter-bold{
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-style: normal;
+  }
+  .inter-extrabold{
+    font-family: "Inter", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 800;
+    font-style: normal;
+  }
+
+  /* Firefox */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: #2A3548 transparent;
+  }
+
+  /* WebKit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #2A3548;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #3B4A66;
   }
 }
