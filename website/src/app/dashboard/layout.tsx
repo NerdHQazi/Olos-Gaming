@@ -1,11 +1,12 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import {
   Bell,
   ChevronDown,
   CircleHelp,
   Gamepad2,
+  Store,
   LayoutDashboard,
   Menu,
   Trophy,
@@ -18,6 +19,10 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { RiCoinsFill } from "react-icons/ri";
 import { FaEthereum } from "react-icons/fa";
+import { ConnectWalletButton } from "@/components/ConnectWalletButton";
+import { useAppKitAccount } from "@reown/appkit/react";
+import { ethers } from "ethers";
+import { useWallet } from "@/context/WalletContext";
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -31,7 +36,7 @@ const navigation = [
   },
   {
     label: "Game",
-    href: "/dashboard/game",
+    href: "/dashboard/games",
     icon: Gamepad2,
     active: true,
   },
@@ -58,6 +63,11 @@ const navigation = [
     icon: Wallet,
   },
   {
+    label: "Marketplace",
+    href: "/dashboard/marketplace",
+    icon: Store,
+  },
+  {
     label: "Profile",
     href: "/dashboard/profile",
     icon: UserRound,
@@ -75,26 +85,86 @@ const navigation = [
   },
 ];
 
-const truncateWalletAddress = (
-  address: string,
-  startLength = 6,
-  endLength = 4,
-): string => {
-  if (!address) return "";
+// const truncateWalletAddress = (
+//   address: string,
+//   startLength = 6,
+//   endLength = 4,
+// ): string => {
+//   if (!address) return "";
 
-  if (address.length <= startLength + endLength) {
-    return address;
-  }
+//   if (address.length <= startLength + endLength) {
+//     return address;
+//   }
 
-  return `${address.slice(0, startLength)}...${address.slice(-endLength)}`;
-};
+//   return `${address.slice(0, startLength)}...${address.slice(-endLength)}`;
+// };
+
+const GVT_ADDRESS = "0xDE0Bd309CbCaf5E6fBc7e05660E7BCb83520C3fC";
+const GVT_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [ethAddress, setEthAddress] = useState("");
+  const [isFetchingChain, setIsFetchingChain] = useState(false);
   const router = useRouter();
-
+  const { isConnected, address } = useAppKitAccount();
+  const [onChainBalance, setOnChainBalance] = useState<string | null>(null);
   const pathname = usePathname();
+  const { balance: web2Balance, isLoading: walletLoading } = useWallet();
+
+  const getProvider = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    const eth = (window as any).ethereum;
+    if (!eth) return null;
+    return new ethers.BrowserProvider(eth);
+  }, []);
+
+  const fetchOnChainBalance = useCallback(async () => {
+    if (!isConnected || !address) return;
+    const provider = getProvider();
+    if (!provider) return;
+    setIsFetchingChain(true);
+    try {
+      const gvt = new ethers.Contract(GVT_ADDRESS, GVT_ABI, provider);
+      const raw = await gvt.balanceOf(address);
+      setOnChainBalance(
+        parseFloat(ethers.formatEther(raw)).toLocaleString("en-US", {
+          maximumFractionDigits: 2,
+        }),
+      );
+    } catch (e) {
+      console.error("[Wallet] balance fetch failed:", e);
+      setOnChainBalance(null);
+    } finally {
+      setIsFetchingChain(false);
+    }
+  }, [isConnected, address, getProvider]);
+
+  useEffect(() => {
+    if (isConnected && address) {
+      fetchOnChainBalance();
+    } else if (!isConnected) {
+      setOnChainBalance(null);
+    }
+  }, [isConnected, address, fetchOnChainBalance]);
+
+  const rawBalance = isConnected
+    ? onChainBalance?.replace(/,/g, "") || "0"
+    : String(web2Balance);
+  const displayBalance = isConnected
+    ? onChainBalance !== null
+      ? `${onChainBalance} GVT`
+      : "— GVT"
+    : `${web2Balance.toLocaleString()} GVT`;
+  const displayUSD = `≈ $${(parseFloat(rawBalance) * 0.25).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  const isLoadingBal = isConnected ? isFetchingChain : walletLoading;
+
+  console.log(displayBalance, displayUSD);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -106,22 +176,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#03060d] text-white">
-      <div className="flex min-h-screen">
+    <div className="max-h-screen h-screen bg-[#03060d] text-white">
+      <div className="flex max-h-screen">
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-[220px] flex-col border-r border-[#18203b] bg-[#080d1c] transition-transform duration-300 lg:static lg:translate-x-0 ${
+          className={`fixed h-full overflow-auto inset-y-0 left-0 z-50 flex w-[220px] flex-col border-r border-[#18203b] bg-[#080d1c] transition-transform duration-300 lg:static lg:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
           <div className="flex h-[68px] items-center justify-between border-b border-[#151d35] px-5">
             <a href="/dashboard" className="flex items-center gap-2">
               <div className="relative">
-                <div className="text-[20px] font-black tracking-tight text-[#20ceee]">
+                {/* <div className="text-[20px] font-black tracking-tight text-[#20ceee]">
                   OLOS
                 </div>
                 <div className="absolute -right-7 -top-1 rounded border border-[#33405e] px-1 py-[1px] text-[6px] font-bold text-[#7783a5]">
                   BETA
-                </div>
+                </div> */}
+                <Image
+                  src="/OLOS_logo.svg"
+                  alt="Olos Logo"
+                  width={120}
+                  height={120}
+                  className="w-auto"
+                />
               </div>
             </a>
 
@@ -217,7 +294,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </button>
 
                 <h1 className="truncate text-sm font-bold text-white sm:text-[24px]">
-                  Match Results
+                  {/* Match Results */}
                 </h1>
               </div>
 
@@ -238,15 +315,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <div className="text-[11px] font-medium text-[#A4B7EB]">
                     GVT Balance
                   </div>
-                  <div className="text-[16px] font-bold text-[#4CD7F6]">
-                    2,480 GVT
-                    <span className="ml-1 text-[11px] font-normal text-[#A4B7EB]">
-                      $24.80
-                    </span>
-                  </div>
+                  {isLoadingBal ? (
+                    <></>
+                  ) : (
+                    <div className="text-[16px] font-bold text-[#4CD7F6]">
+                      {displayBalance}
+                      <span className="ml-1 text-[11px] font-normal text-[#A4B7EB]">
+                        {displayUSD}
+                      </span>
+                    </div>
+                  )}
                 </Link>
 
-                <button
+                <ConnectWalletButton variant="navbar" />
+
+                {/* <button
                   onClick={() => {
                     if (!ethAddress) {
                       router.push("/connect");
@@ -264,7 +347,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   {ethAddress && (
                     <ChevronDown size={16} className="text-[#fff]" />
                   )}
-                </button>
+                </button> */}
 
                 <button
                   type="button"
@@ -277,8 +360,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 bg-[#03060d]">
-            <div className="mx-auto w-full max-w-[1200px]">{children}</div>
+          <main className="min-w-0 flex-1 bg-[#03060d] overflow-auto">
+            <div className="mx-auto w-full max-w-300">{children}</div>
           </main>
         </div>
       </div>
