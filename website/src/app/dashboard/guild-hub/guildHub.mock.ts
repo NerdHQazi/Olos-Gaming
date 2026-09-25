@@ -19,6 +19,9 @@ export interface Guild {
   tagline?: string; // shown on the guild profile / apply page
   winRateMinPercent?: number; // membership requirement, e.g. 55.0
   stakingDuesPerMonth?: number; // membership requirement, GVT/month
+  totalWins?: number; // shown on the leaderboard
+  totalEarned?: number; // GVT, shown on the leaderboard
+  isUserGuild?: boolean; // highlights this row as "Your Guild" on the leaderboard
 }
 
 export interface ApplicantStats {
@@ -51,6 +54,8 @@ export const mockGuilds: Guild[] = [
     tagline: "\u201cNo mercy in the pit. Cold-blooded on-chain slayers.\u201d",
     winRateMinPercent: 55.0,
     stakingDuesPerMonth: 50,
+    totalWins: 2840,
+    totalEarned: 45800,
   },
   {
     id: "guild-002",
@@ -64,6 +69,9 @@ export const mockGuilds: Guild[] = [
     tagline: "\u201cNo mercy in the pit. Cold-blooded on-chain slayers.\u201d",
     winRateMinPercent: 55.0,
     stakingDuesPerMonth: 50,
+    totalWins: 2840,
+    totalEarned: 45800,
+    isUserGuild: true,
   },
   {
     id: "guild-003",
@@ -77,6 +85,8 @@ export const mockGuilds: Guild[] = [
     tagline: "\u201cGas is just the cost of victory.\u201d",
     winRateMinPercent: 50.0,
     stakingDuesPerMonth: 40,
+    totalWins: 2610,
+    totalEarned: 38200,
   },
   {
     id: "guild-004",
@@ -90,6 +100,8 @@ export const mockGuilds: Guild[] = [
     tagline: "\u201cCompound wins, compound yield.\u201d",
     winRateMinPercent: 45.0,
     stakingDuesPerMonth: 75,
+    totalWins: 2190,
+    totalEarned: 32400,
   },
   {
     id: "guild-005",
@@ -103,6 +115,8 @@ export const mockGuilds: Guild[] = [
     tagline: "\u201cFull roster, full venom.\u201d",
     winRateMinPercent: 55.0,
     stakingDuesPerMonth: 60,
+    totalWins: 1980,
+    totalEarned: 28100,
   },
   {
     id: "guild-006",
@@ -116,6 +130,8 @@ export const mockGuilds: Guild[] = [
     tagline: "\u201cCasting spells, stacking blocks.\u201d",
     winRateMinPercent: 40.0,
     stakingDuesPerMonth: 20,
+    totalWins: 1450,
+    totalEarned: 19500,
   },
   {
     id: "guild-007",
@@ -129,6 +145,8 @@ export const mockGuilds: Guild[] = [
     tagline: "\u201cSpeed is the only strategy.\u201d",
     winRateMinPercent: 45.0,
     stakingDuesPerMonth: 30,
+    totalWins: 1200,
+    totalEarned: 14200,
   },
 ];
 
@@ -172,3 +190,10 @@ export function searchGuilds(query: string): Guild[] {
 export function getGuildById(id: string): Guild | undefined {
   return mockGuilds.find((g) => g.id === id);
 }
+
+
+export function rankGuildsByWins(guilds: Guild[]): Guild[] {
+  return [...guilds].sort((a, b) => (b.totalWins ?? 0) - (a.totalWins ?? 0));
+}
+ 
+ 

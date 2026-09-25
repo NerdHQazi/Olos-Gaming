@@ -48,19 +48,19 @@ export default function CreateGuildPage() {
   }
 
   return (
-    <div className="mt-6 pb-20 flex flex-col gap-5">
+    <div className="mt-6 pb-20 flex flex-col gap-5 max-sm:px-1">
         <BackButton />
       <div>
-        <h1 className="inter-extrabold text-[30px] text-white">Create Your Guild</h1>
+        <h1 className="inter-extrabold text-[30px] text-white max-sm:text-[24px]">Create Your Guild</h1>
         <p className="text-[12px] inter-light text-[#A4B7EB]">
           Establish your team on the smart contract, set entry parameters, and draft your on-chain
           rules.
         </p>
       </div>
 
-      <div className="grid grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="grid grid-cols-[1fr_320px] gap-6 items-start max-lg:grid-cols-1">
         {/* Left: Guild Identity */}
-        <div className="rounded-xl border border-[#2A1060] bg-[#060A14CC] p-5 flex flex-col gap-5">
+        <div className="rounded-xl border border-[#2A1060] bg-[#060A14CC] p-5 flex flex-col gap-5 max-sm:p-4">
           <h2 className="inter-bold text-[18px] text-white">Guild Identity</h2>
 
           <Field label="Guild Name" accent>
@@ -91,7 +91,7 @@ export default function CreateGuildPage() {
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-10 cursor-pointer transition-colors
+              className={`relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-10 cursor-pointer transition-colors max-sm:py-8 max-sm:px-4
                 ${isDragging ? "border-[#20CEEE] bg-[#20CEEE]/5" : "border-[#20CEEE]/50 hover:border-[#20CEEE]"}`}
             >
               <input
@@ -106,10 +106,10 @@ export default function CreateGuildPage() {
               ) : (
                 <UploadCloud className="text-[#20CEEE]" size={30} strokeWidth={1.75} />
               )}
-              <p className="inter-semibold text-[12px] text-white">
+              <p className="inter-semibold text-[12px] text-white text-center">
                 {emblemUrl ? "Emblem uploaded — click to replace" : "Drag and drop guild logo or click to browse"}
               </p>
-              <p className="text-[10px] text-[#908FA0] inter-light">Supports PNG, JPG (Max 2MB). Ideal size 512×512px</p>
+              <p className="text-[10px] text-[#908FA0] inter-light text-center">Supports PNG, JPG (Max 2MB). Ideal size 512×512px</p>
             </div>
           </div>
 
@@ -126,10 +126,10 @@ export default function CreateGuildPage() {
 
         {/* Right: Contract Rules */}
         <div className="flex flex-col gap-4">
-          <div className="rounded-xl border border-[#2A1060] bg-slate-900/30 p-5 flex flex-col gap-5">
+          <div className="rounded-xl border border-[#2A1060] bg-slate-900/30 p-5 flex flex-col gap-5 max-sm:p-4">
             <h2 className="inter-extrabold text-[18px] text-white">Contract Rules</h2>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[12px] text-white inter-bold">Private Guild</p>
                 <p className="text-[10px] text-[#908FA0] inter-light">Requires application review</p>

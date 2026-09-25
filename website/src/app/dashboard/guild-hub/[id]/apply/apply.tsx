@@ -38,16 +38,16 @@ export default function ApplyForGuildPage({
   }
 
   return (
-    <div className="mt-6 pb-20 flex flex-col gap-6">
+    <div className="mt-6 pb-20 flex flex-col gap-6 max-sm:px-1">
          <BackButton />
       {/* Guild header */}
-      <div className="flex items-center gap-4">
-        <div className="relative w-22 h-22 rounded-lg overflow-hidden bg-slate-800 shrink-0">
+      <div className="flex items-center gap-4 max-sm:items-start">
+        <div className="relative w-22 h-22 rounded-lg overflow-hidden bg-slate-800 shrink-0 max-sm:w-16 max-sm:h-16">
           <Image src={guild.iconUrl} alt={guild.name} fill className="object-cover" />
         </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-white text-[30px] inter-extrabold">
+        <div className="flex flex-col gap-1 min-w-0">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-white text-[30px] inter-extrabold max-sm:text-[22px]">
               {guild.name}
               {guild.shortName ? ` [${guild.shortName}]` : ""}
             </h1>
@@ -59,16 +59,16 @@ export default function ApplyForGuildPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_300px] gap-6 items-start">
+      <div className="grid grid-cols-[1fr_300px] gap-6 items-start max-lg:grid-cols-1">
         {/* Left: application form */}
-        <div className="rounded-xl border border-[#2A1060] bg-[#060A14CC] p-5 flex flex-col gap-5">
+        <div className="rounded-xl border border-[#2A1060] bg-[#060A14CC] p-5 flex flex-col gap-5 max-sm:p-4">
           <h2 className="inter-extrabold text-[18px] text-white">Apply for Membership</h2>
 
           <div className="flex flex-col gap-2">
             <span className="text-[12px] tracking-wide text-[#A4B7EB] inter-bold">
               Your On-Chain Stats (Auto-populated from Wallet)
             </span>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
               <StatBox label="Win Rate" value={`${applicantStats.winRate}%`} green />
               <StatBox label="Total Matches" value={applicantStats.totalMatches.toLocaleString()} />
               <StatBox
@@ -98,15 +98,15 @@ export default function ApplyForGuildPage({
             />
           </Field>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 max-sm:flex-col max-sm:items-stretch">
             <button
               onClick={handleSubmit}
               disabled={!canSubmit}
-              className="rounded-md bg-[#20CEEE] disabled:opacity-50 disabled:cursor-not-allowed text-[#050810] px-5 py-2.5 uppercase inter-extrabold text-[12px] transition-opacity"
+              className="rounded-md bg-[#20CEEE] disabled:opacity-50 disabled:cursor-not-allowed text-[#050810] px-5 py-2.5 uppercase inter-extrabold text-[12px] transition-opacity max-sm:w-full"
             >
               {isSubmitting ? "Submitting…" : "Submit Secure Application"}
             </button>
-            <button className="rounded-md border border-[#2A1060] text-white px-5 py-2.5 inter-bold text-[12px] hover:bg-slate-900/60 transition-colors uppercase">
+            <button className="rounded-md border border-[#2A1060] text-white px-5 py-2.5 inter-bold text-[12px] hover:bg-slate-900/60 transition-colors uppercase max-sm:w-full">
               Cancel
             </button>
           </div>

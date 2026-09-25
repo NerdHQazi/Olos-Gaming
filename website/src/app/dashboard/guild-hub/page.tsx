@@ -28,21 +28,21 @@ export default function GuildHubPage() {
   }, [query, roster]);
 
   return (
-    <div className="mt-6 pb-20 flex flex-col gap-6">
+    <div className="mt-6 pb-20 flex flex-col gap-6 max-sm:px-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="inter-extrabold text-[26px] text-white">Olos Guild Hub</h1>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+      <div className="flex items-center justify-between max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
+        <h1 className="inter-extrabold text-[26px] text-white max-sm:text-[22px]">Olos Guild Hub</h1>
+        <div className="flex items-center gap-3 max-sm:flex-col max-sm:items-stretch max-sm:w-full">
+          <div className="relative max-sm:w-full">
             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 inter-light text-slate-500" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search guilds, tag or games…"
-              className="w-64 rounded-md border border-[#2A1060] bg-slate-900/40 pl-8 pr-3 py-2 text-[12px] inter-light text-white outline-none placeholder:text-slate-500 focus:border-[#20CEEE]"
+              className="w-64 rounded-md border border-[#2A1060] bg-slate-900/40 pl-8 pr-3 py-2 text-[12px] inter-light text-white outline-none placeholder:text-slate-500 focus:border-[#20CEEE] max-sm:w-full"
             />
           </div>
-          <Link href={`/dashboard/guild-hub/create`} className="rounded-md bg-[#7135DB] px-6 py-2 text-[12px] inter-bold text-white hover:opacity-90 transition-opacity">
+          <Link href={`/dashboard/guild-hub/create`} className="rounded-md bg-[#7135DB] px-6 py-2 text-[12px] inter-bold text-white hover:opacity-90 transition-opacity max-sm:text-center">
             Create Guild
           </Link>
         </div>
@@ -52,12 +52,12 @@ export default function GuildHubPage() {
       {featured && <FeaturedGuildBanner guild={featured} />}
 
       {/* Guild grid */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1">
         {filteredRoster.map((guild) => (
           <GuildCard key={guild.id} guild={guild} />
         ))}
         {filteredRoster.length === 0 && (
-          <p className="col-span-3 text-center text-[13px] text-[#908FA0] py-10">
+          <p className="col-span-full text-center text-[13px] text-[#908FA0] py-10">
             No guilds match "{query}".
           </p>
         )}
@@ -68,14 +68,14 @@ export default function GuildHubPage() {
 
 function FeaturedGuildBanner({ guild }: { guild: Guild }) {
   return (
-    <div className="rounded-xl border border-[#20CEEE] bg-[#20CEEE]/5 px-6 py-5 flex items-center justify-between gap-6">
-      <div className="flex items-center gap-4">
-        <div className="relative w-29 h-29 rounded-lg overflow-hidden bg-white shrink-0">
+    <div className="rounded-xl border border-[#20CEEE] bg-[#20CEEE]/5 px-6 py-5 flex items-center justify-between gap-6 max-md:flex-col max-md:items-start">
+      <div className="flex items-center gap-4 max-sm:flex-col max-sm:items-start">
+        <div className="relative w-29 h-29 rounded-lg overflow-hidden bg-white shrink-0 max-sm:w-20 max-sm:h-20">
           <Image src={guild.iconUrl} alt={guild.name} fill className="object-contain p-1" />
         </div>
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <h2 className="text-white text-[22px] inter-extrabold">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-white text-[22px] inter-extrabold max-sm:text-[18px]">
               Featured: {guild.name}
               {guild.shortName ? ` [${guild.shortName}]` : ""}
             </h2>
@@ -88,7 +88,7 @@ function FeaturedGuildBanner({ guild }: { guild: Guild }) {
           {guild.description && (
             <p className="text-[12px] inter-light text-[#A4B7EB]">{guild.description}</p>
           )}
-          <div className="flex items-center gap-5 text-[11px] inter-light text-[#908FA0]">
+          <div className="flex items-center gap-5 text-[11px] inter-light text-[#908FA0] flex-wrap gap-y-1.5">
             <span>
               Members: <span className="text-white inter-bold">{guild.members}/{guild.maxMembers}</span>
             </span>
@@ -106,7 +106,7 @@ function FeaturedGuildBanner({ guild }: { guild: Guild }) {
           </div>
         </div>
       </div>
-      <Link href={`/dashboard/guild-hub/${guild.id}/apply`} className="shrink-0 rounded-md bg-[#20CEEE] px-6 py-2.5 text-[12px] inter-bold text-[#050810] hover:opacity-90 transition-opacity">
+      <Link href={`/dashboard/guild-hub/${guild.id}/apply`} className="shrink-0 rounded-md bg-[#20CEEE] px-6 py-2.5 text-[12px] inter-bold text-[#050810] hover:opacity-90 transition-opacity max-md:w-full max-md:text-center">
         Join Guild
       </Link>
     </div>
