@@ -43,7 +43,8 @@ const GAMES: Game[] = [
   {
     slug: "checkers",
     title: "Checkers",
-    description: "Classic board game for two players. Capture all enemy pieces to win!",
+    description:
+      "Classic board game for two players. Capture all enemy pieces to win!",
     modes: ["Solo", "1v1"],
     image: "/bounce.png",
     available: true,
@@ -76,11 +77,11 @@ const GAMES: Game[] = [
 
 const FILTERS: FilterType[] = ["All", "Solo", "1v1"];
 
-function GameCard({ 
-  game, 
+function GameCard({
+  game,
   onSelect1v1,
-  onSelectSystem
-}: { 
+  onSelectSystem,
+}: {
   game: Game;
   onSelect1v1: (game: Game) => void;
   onSelectSystem: (game: Game) => void;
@@ -129,12 +130,12 @@ function GameCard({
           {game.available ? (
             <>
               <Link
-                href={`/games/${game.slug}`}
+                href={`/dashboard/games/${game.slug}`}
                 className="flex-1 py-2.5 rounded-xl bg-olos-blue hover:bg-olos-cobalt text-white text-[12px] font-black text-center transition-all active:scale-95 shadow-md shadow-blue-900/30"
               >
                 Practice
               </Link>
-              <button 
+              <button
                 onClick={() => onSelect1v1(game)}
                 className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-blue-500/20 hover:border-blue-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
               >
@@ -175,10 +176,14 @@ export default function GamesScreen() {
   const { isLoggedIn, user } = useAuth();
   const router = useRouter();
   const [filter, setFilter] = useState<FilterType>("All");
-  const [selectedGameForStake, setSelectedGameForStake] = useState<Game | null>(null);
+  const [selectedGameForStake, setSelectedGameForStake] = useState<Game | null>(
+    null,
+  );
   const [matchmakingActive, setMatchmakingActive] = useState(false);
   const [activeStake, setActiveStake] = useState(0);
-  const [systemGameForStake, setSystemGameForStake] = useState<Game | null>(null);
+  const [systemGameForStake, setSystemGameForStake] = useState<Game | null>(
+    null,
+  );
   const [startingSystemMatch, setStartingSystemMatch] = useState(false);
   const [systemMatchError, setSystemMatchError] = useState<string | null>(null);
 
@@ -193,7 +198,7 @@ export default function GamesScreen() {
     };
 
     try {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const w = window as any;
         if (!Array.isArray(w.__MM_AUDIT_LOGS)) {
           w.__MM_AUDIT_LOGS = [];
@@ -204,34 +209,36 @@ export default function GamesScreen() {
       // no-op
     }
 
-    console.log('[MM_AUDIT]', entry);
+    console.log("[MM_AUDIT]", entry);
   };
 
   const handleSelect1v1 = (game: Game) => {
     if (!isLoggedIn) {
-      logAudit('games.1v1_click_redirect_auth', { clickedGame: game.slug });
+      logAudit("games.1v1_click_redirect_auth", { clickedGame: game.slug });
       router.push("/auth");
       return;
     }
-    logAudit('games.1v1_click_open_stake', { clickedGame: game.slug });
+    logAudit("games.1v1_click_open_stake", { clickedGame: game.slug });
     setSelectedGameForStake(game);
   };
 
   const visible = GAMES.filter(
-    (g) => filter === "All" || g.modes.includes(filter)
+    (g) => filter === "All" || g.modes.includes(filter),
   );
 
   const handleStartMatch = (stake: number) => {
-    logAudit('games.start_match_click', { selectedStake: stake });
+    logAudit("games.start_match_click", { selectedStake: stake });
     setActiveStake(stake);
     setMatchmakingActive(true);
   };
 
   const handleMatchmakingComplete = (mId: string) => {
-    logAudit('games.matchmaking_complete', { completedMatchId: mId });
+    logAudit("games.matchmaking_complete", { completedMatchId: mId });
     alert(`Game starting now for ${selectedGameForStake?.title}!`);
-    logAudit('games.redirect_to_board', { url: `/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}` });
-    location.href = `/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}`;
+    logAudit("games.redirect_to_board", {
+      url: `/dashboard/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}`,
+    });
+    location.href = `/dashboard/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}`;
   };
 
   const handleSelectSystem = (game: Game) => {
@@ -255,22 +262,23 @@ export default function GamesScreen() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      location.href = `/games/${systemGameForStake.slug}?mode=1v1&stake=${stake}&matchId=${data.match_id}`;
+      location.href = `/dashboard/games/${systemGameForStake.slug}?mode=1v1&stake=${stake}&matchId=${data.match_id}`;
     } catch (err) {
-      setSystemMatchError(err instanceof Error ? err.message : "Could not start match vs System");
+      setSystemMatchError(
+        err instanceof Error ? err.message : "Could not start match vs System",
+      );
       setStartingSystemMatch(false);
     }
   };
 
   return (
     <main className="min-h-screen bg-[#0B1121] text-white">
-      <Navbar />
+      {/* <Navbar /> */}
 
-      <div className="max-w-[1567px] mx-auto px-8 lg:px-16 pt-32 pb-28">
-
+      <div className="max-w-[1567px] mx-auto px-8 lg:px-16 pb-28">
         {matchmakingActive && selectedGameForStake ? (
           <div className="flex flex-col items-center">
-            <Matchmaking 
+            <Matchmaking
               game={selectedGameForStake}
               stake={activeStake}
               winnerReceives={activeStake * 2 * 0.9}
@@ -289,7 +297,9 @@ export default function GamesScreen() {
               </button>
             </div>
             {systemMatchError && (
-              <p className="w-full max-w-[560px] mb-4 text-red-400 text-sm font-bold">{systemMatchError}</p>
+              <p className="w-full max-w-[560px] mb-4 text-red-400 text-sm font-bold">
+                {systemMatchError}
+              </p>
             )}
             <StakeSelection
               game={systemGameForStake}
@@ -297,21 +307,23 @@ export default function GamesScreen() {
               onStart={handleStartSystemMatch}
             />
             {startingSystemMatch && (
-              <p className="mt-4 text-gray-400 text-sm font-bold">Starting match vs System…</p>
+              <p className="mt-4 text-gray-400 text-sm font-bold">
+                Starting match vs System…
+              </p>
             )}
           </div>
         ) : selectedGameForStake ? (
           <div className="flex flex-col items-center animate-fade-in">
-             <div className="w-full max-w-[560px] mb-8">
-              <button 
+            <div className="w-full max-w-[560px] mb-8">
+              <button
                 onClick={() => setSelectedGameForStake(null)}
                 className="text-gray-500 hover:text-white transition-colors text-sm font-bold flex items-center gap-2"
               >
                 <span>←</span> Back to Games
               </button>
             </div>
-            <StakeSelection 
-              game={selectedGameForStake} 
+            <StakeSelection
+              game={selectedGameForStake}
               onBack={() => setSelectedGameForStake(null)}
               onStart={handleStartMatch}
             />
@@ -355,12 +367,36 @@ export default function GamesScreen() {
 
             {/* Live matches bar */}
             <div className="flex items-center gap-4 px-5 py-3.5 rounded-xl border border-[#00d2ff]/15 bg-[#00d2ff]/[0.04] mb-10">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-[#00d2ff] shrink-0">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-[#00d2ff] shrink-0"
+              >
+                <path
+                  d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <circle
+                  cx="9"
+                  cy="7"
+                  r="4"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
-              <span className="text-white text-[13px] font-black">Live matches:</span>
+              <span className="text-white text-[13px] font-black">
+                Live matches:
+              </span>
               <div className="flex items-center gap-2 flex-wrap">
                 {[
                   { name: "Snake", count: 24, color: "#22c55e" },
@@ -385,9 +421,9 @@ export default function GamesScreen() {
             {/* Game Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 animate-fade-in-up">
               {visible.map((game) => (
-                <GameCard 
-                  key={game.slug} 
-                  game={game} 
+                <GameCard
+                  key={game.slug}
+                  game={game}
                   onSelect1v1={handleSelect1v1}
                   onSelectSystem={handleSelectSystem}
                 />

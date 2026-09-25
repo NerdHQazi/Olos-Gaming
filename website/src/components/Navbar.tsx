@@ -8,13 +8,19 @@ import { useAuth } from '@/context/AuthContext';
 import { ethers } from 'ethers';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useWallet } from '@/context/WalletContext';
+import Image from 'next/image';
+
 
 export default function Navbar() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const { isLoggedIn, user, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // responsive: mobile menu state
   const pathname = usePathname();
+
+  // responsive: close the mobile menu whenever the route changes
+  useEffect(() => { setIsMobileOpen(false); }, [pathname]);
 
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
@@ -24,8 +30,8 @@ export default function Navbar() {
     return (
       <Link
         href={href}
-        className={`relative text-[13px] font-bold transition-colors group ${
-          isActive ? 'text-white' : 'text-gray-400 hover:text-white'
+        className={`relative text-[12px] font-bold transition-colors group ${
+          isActive ? 'text-gray-400' : 'text-white hover:text-[#A4B7EB]'
         }`}
       >
         {label}
@@ -37,29 +43,35 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-[100] bg-[#0B1121]/95 backdrop-blur-sm border-b border-white/5 py-4">
-      <div className="max-w-[1567px] mx-auto px-8 lg:px-16 flex items-center justify-between">
+    <nav className="fixed top-0 w-full z-100 bg-[#02040A] backdrop-blur-sm border-b border-white/5 py-4 max-sm:py-3">
+      <div className="max-w-391.75 mx-auto px-8 lg:px-12 flex items-center justify-between inter-bold max-sm:px-4">
+        {/* max-w-[1567px] z-[100] */}
 
         {/* Left: Logo + Links */}
-        <div className="flex items-center gap-10">
+        <div className="flex items-center">
           <Link href="/" className="flex items-center group">
-            <span className="text-xl font-black text-white tracking-wider">OLOS</span>
+            <span className="text-xl font-black text-white tracking-wider">
+              <Image src="/OLOS_logo.svg" alt="OLOS" width={120} height={60} className="max-sm:w-24 max-sm:h-auto" />
+            </span>
           </Link>
-          <div className="hidden md:flex items-center gap-8">
-            {navLink('/games', 'Games')}
-            {navLink('/leaderboard', 'Leaderboards')}
-          </div>
+        </div>
+
+        <div className="hidden md:flex items-center gap-8 uppercase md:max-lg:hidden!">
+          {navLink('/games', 'Games')}
+          {navLink('/leaderboard', 'Leaderboards')}
+          {navLink('/how-it-works', 'How it works')}
+          {navLink('/tokens', 'Tokens')}
+          {navLink('/about', 'About')}
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-3">
-
+        <div className="flex items-center gap-2">
           {!isLoggedIn ? (
             // ── LOGGED OUT ─────────────────────────────────────────
             <>
               {/* App store badges — desktop only */}
               <div className="hidden lg:flex items-center gap-3">
-                <Link href="#" className="hover:opacity-80 transition-opacity">
+                {/* <Link href="#" className="hover:opacity-80 transition-opacity">
                   <img
                     src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg"
                     alt="App Store"
@@ -72,32 +84,41 @@ export default function Navbar() {
                     alt="Google Play"
                     className="h-9"
                   />
-                </Link>
+                </Link> */}
               </div>
 
               {/* Web2 path */}
               <Link
                 href="/auth"
-                className="px-6 py-2.5 rounded-lg bg-olos-blue hover:bg-olos-cobalt text-white text-[13px] font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20"
+                className="px-6 py-2.5 rounded-lg text-white hover:text-[#A4B7EB] text-[12px] font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20 uppercase max-sm:hidden"
               >
                 Sign In
+              </Link>
+              <Link
+                href="/auth"
+                className="px-6 py-2.5 rounded-lg bg-[#C0C1FF] hover:bg-white text-[#1000A9] text-[12px] font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20 uppercase max-sm:px-3 max-sm:py-2 max-sm:text-[11px] max-sm:whitespace-nowrap"
+              >
+                Connect Wallet
               </Link>
             </>
           ) : (
             // ── LOGGED IN ──────────────────────────────────────────
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 max-sm:gap-2">
 
               {/* GVT Token Balance — live on-chain */}
               <NavGVTBalance />
 
               {/* Web3 wallet connect — visible when logged in */}
-              <ConnectWalletButton variant="navbar" />
+              {/* responsive: hidden on phones here, shown inside the mobile menu instead */}
+              <div className="contents max-sm:hidden">
+                <ConnectWalletButton variant="navbar" />
+              </div>
 
               {/* Profile dropdown */}
               <div className="relative">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className={`flex items-center gap-2.5 px-4 py-2.5 bg-[#1A232E]/50 border rounded-xl transition-all ${
+                  className={`flex items-center gap-2.5 px-4 py-2.5 bg-[#1A232E]/50 border rounded-xl transition-all max-sm:px-3 max-sm:py-2 ${
                     isProfileOpen ? 'border-olos-blue' : 'border-white/10 hover:border-white/20'
                   }`}
                 >
@@ -113,14 +134,14 @@ export default function Navbar() {
                   <svg
                     width="12" height="12"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                    className={`text-gray-500 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`}
+                    className={`text-gray-500 transition-transform max-sm:hidden ${isProfileOpen ? 'rotate-180' : ''}`}
                   >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute top-[calc(100%+8px)] right-0 w-52 bg-[#0B1121] border border-white/10 rounded-xl shadow-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="absolute top-[calc(100%+8px)] right-0 w-52 bg-background border border-white/10 rounded-xl shadow-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
                     <Link href="/profile" className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                       Profile
@@ -153,13 +174,68 @@ export default function Navbar() {
               </div>
             </div>
           )}
+
+          {/* responsive: mobile menu toggle (visible below lg only) */}
+          <button
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            aria-label={isMobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileOpen}
+            className="lg:hidden flex items-center justify-center w-10 h-10 shrink-0 rounded-xl bg-[#1A232E]/50 border border-white/10 text-white hover:border-white/20 transition-all active:scale-95"
+          >
+            {isMobileOpen ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
+          </button>
         </div>
+
       </div>
+
+      {/* responsive: mobile menu panel (below lg only) */}
+      {isMobileOpen && (
+        <div className="lg:hidden mt-4 px-4 sm:px-8 pt-2 pb-2 border-t border-white/5 max-h-[calc(100dvh-5rem)] overflow-y-auto inter-bold">
+          <div
+            onClick={() => setIsMobileOpen(false)}
+            className="flex flex-col uppercase [&>a]:block [&>a]:py-3.5 [&>a]:text-[13px] [&>a]:border-b [&>a]:border-white/5 [&>a>span]:hidden"
+          >
+            {navLink('/games', 'Games')}
+            {navLink('/leaderboard', 'Leaderboards')}
+            {navLink('/how-it-works', 'How it works')}
+            {navLink('/tokens', 'Tokens')}
+            {navLink('/about', 'About')}
+          </div>
+
+          {/* Actions that are hidden from the top bar on phones */}
+          <div className="sm:hidden flex flex-col gap-3 pt-4 pb-2">
+            {!isLoggedIn ? (
+              <Link
+                href="/auth"
+                onClick={() => setIsMobileOpen(false)}
+                className="block text-center px-6 py-3 rounded-lg border border-white/10 text-white hover:text-[#A4B7EB] text-[12px] font-bold transition-all active:scale-95 uppercase"
+              >
+                Sign In
+              </Link>
+            ) : (
+              <div className="flex">
+                <ConnectWalletButton variant="navbar" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
 
-// ─── Live GVT balance pill for navbar ──────────────────────────────────────
+// // ─── Live GVT balance pill for navbar ──────────────────────────────────────
 function NavGVTBalance() {
   const { isConnected, address } = useAppKitAccount();
   const { balance: web2Balance } = useWallet();
@@ -200,15 +276,15 @@ function NavGVTBalance() {
   return (
     <Link
       href="/wallet"
-      className="flex items-center gap-2.5 px-4 py-2.5 bg-[#1A232E]/50 border border-white/10 rounded-xl hover:border-white/20 transition-all"
+      className="flex items-center gap-2.5 px-4 py-2.5 bg-[#1A232E]/50 border border-white/10 rounded-xl hover:border-white/20 transition-all max-sm:px-3 max-sm:py-2"
     >
-      <div className="text-olos-blue">
+      <div className="text-olos-blue max-sm:hidden">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5" />
           <path d="M18 12H22" />
         </svg>
       </div>
-      <span className="text-[13px] font-black tracking-tight text-white">{display}</span>
+      <span className="text-[13px] font-black tracking-tight text-white max-sm:text-[12px] max-sm:whitespace-nowrap">{display}</span>
     </Link>
   );
 }

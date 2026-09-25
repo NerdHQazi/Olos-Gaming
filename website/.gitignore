@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local authentication backups
+src/app/auth.backup/
+
+# Root-level image files
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
