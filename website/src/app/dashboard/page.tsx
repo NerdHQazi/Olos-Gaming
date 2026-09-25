@@ -1,9 +1,9 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useWallet } from "@/context/WalletContext";
-import AppShell from "@/components/app/AppShell";
 import Avatar from "@/components/app/Avatar";
 
 // TODO: no backend/leaderboard/match-history endpoints exist yet for any of
@@ -26,28 +26,98 @@ const MOCK_MATCHES = [
   },
   { game: "BlockBlitz", time: "2m ago", result: "won" as const, amount: 95 },
 ];
-const CATEGORIES = ["All", "Strategy", "Puzzle", "Arcade", "Board", "Action"];
-const GAMES = [
+
+type GameCategory = "Strategy" | "Puzzle" | "Arcade" | "Board" | "Action";
+
+type Game = {
+  slug: string;
+  name: string;
+  category: GameCategory;
+  modes: ("Solo" | "1v1")[];
+  players: string;
+  rating: number;
+  image: string;
+  available: boolean;
+  description: string;
+};
+
+const CATEGORIES = [
+  "All",
+  "Strategy",
+  "Puzzle",
+  "Arcade",
+  "Board",
+  "Action",
+] as const;
+
+const GAMES: Game[] = [
   {
-    name: "Quantum Chess",
+    slug: "snake",
+    name: "Snake",
+    category: "Arcade",
+    modes: ["Solo", "1v1"],
+    players: "1,920",
+    rating: 4.8,
+    image: "/images/game-snake-featured.png",
+    available: true,
+    description:
+      "Classic snake on-chain. Eat, grow, survive — last snake standing wins the pool.",
+  },
+  {
+    slug: "chess",
+    name: "Chess",
     category: "Strategy",
+    modes: ["1v1"],
     players: "1,200",
     rating: 4.9,
     image: "/images/game-quantumchess-banner.png",
+    available: true,
+    description:
+      "The ultimate strategy game. Outthink your opponent in real-time 1v1.",
   },
   {
-    name: "Satoshi Runner",
-    category: "Action",
-    players: "1,920",
-    rating: 4.4,
-    image: "/images/game-satoshirunner-banner.png",
-  },
-  {
-    name: "BlockBlitz",
-    category: "Puzzle",
+    slug: "checkers",
+    name: "Checkers",
+    category: "Board",
+    modes: ["Solo", "1v1"],
     players: "850",
-    rating: 4.6,
+    rating: 4.7,
     image: "/images/game-blockblitz-banner.png",
+    available: true,
+    description: "Classic board game. Captures are mandatory. King me.",
+  },
+  {
+    slug: "jumping-jack",
+    name: "Jumping Jack",
+    category: "Arcade",
+    modes: ["Solo", "1v1"],
+    players: "—",
+    rating: 0,
+    image: "/images/game-satoshirunner-banner.png",
+    available: false,
+    description: "Jump between platforms. How high can you climb?",
+  },
+  {
+    slug: "bounce",
+    name: "Bounce",
+    category: "Arcade",
+    modes: ["Solo", "1v1"],
+    players: "—",
+    rating: 0,
+    image: "/images/game-blockblitz-banner.png",
+    available: false,
+    description: "Keep the ball bouncing. Avoid obstacles.",
+  },
+  {
+    slug: "tetris",
+    name: "Tetris",
+    category: "Puzzle",
+    modes: ["Solo", "1v1"],
+    players: "—",
+    rating: 0,
+    image: "/images/game-blockblitz-banner.png",
+    available: false,
+    description: "Stack blocks, clear lines, beat your score.",
   },
 ];
 
@@ -57,16 +127,17 @@ export default function DashboardPage() {
     balance?: number;
     isLoading?: boolean;
   };
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState<string>("All");
 
-  const displayName = user?.username || user?.email?.split("@")[0] || "Player";
+  const displayName =
+    user?.username || user?.email?.split("@")[0] || "Player";
+
   const filteredGames =
     activeCategory === "All"
       ? GAMES
       : GAMES.filter((g) => g.category === activeCategory);
 
   return (
-    // <AppShell title="Dashboard">
     <div className="px-4 md:px-8 py-6 max-w-7xl mx-auto space-y-6">
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -115,18 +186,18 @@ export default function DashboardPage() {
               deterministic physics engine. Last snake standing wins the pool.
             </p>
             <div className="flex items-center gap-3 mt-5">
-              <button
-                type="button"
-                className="h-10 px-5 rounded-xl bg-[#169EFA] hover:opacity-90 text-black text-sm font-bold transition-all"
+              <Link
+                href="/dashboard/games/snake"
+                className="h-10 px-5 rounded-xl bg-[#169EFA] hover:opacity-90 text-black text-sm font-bold transition-all inline-flex items-center"
               >
                 Play Now
-              </button>
-              <button
-                type="button"
-                className="h-10 px-5 rounded-xl border border-white/15 hover:border-white/30 text-sm font-bold text-gray-200 transition-all"
+              </Link>
+              <Link
+                href="/dashboard/games"
+                className="h-10 px-5 rounded-xl border border-white/15 hover:border-white/30 text-sm font-bold text-gray-200 transition-all inline-flex items-center"
               >
                 Learn More
-              </button>
+              </Link>
             </div>
           </div>
           <div className="w-full sm:w-64 shrink-0 rounded-2xl overflow-hidden border border-[#7135DB]/30">
@@ -227,16 +298,21 @@ export default function DashboardPage() {
       <div className="space-y-6">
         {filteredGames.map((game) => (
           <div
-            key={game.name}
-            className="rounded-3xl border border-white/10 bg-[#0B1121] overflow-hidden"
+            key={game.slug}
+            className="rounded-3xl border border-white/10 bg-[#0B1121] overflow-hidden relative"
           >
             <Image
               src={game.image}
               alt={game.name}
               width={1100}
               height={370}
-              className="w-full h-auto"
+              className={`w-full h-auto ${game.available ? "" : "opacity-40"}`}
             />
+            {!game.available && (
+              <span className="absolute top-4 right-4 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-black/70 border border-white/20 text-white">
+                Coming Soon
+              </span>
+            )}
             <div className="p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -245,25 +321,51 @@ export default function DashboardPage() {
                     {game.category}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {game.players} players online
+                    {game.available
+                      ? `${game.players} players online`
+                      : game.description}
                   </p>
+                  {game.available && (
+                    <div className="flex items-center gap-2 mt-2">
+                      {game.modes.map((m) => (
+                        <span
+                          key={m}
+                          className="px-2 py-0.5 rounded-full border border-[#22D3EE]/25 bg-[#22D3EE]/[0.06] text-[#22D3EE] text-[10px] font-black uppercase tracking-wide"
+                        >
+                          {m}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <span className="flex items-center gap-1 text-sm font-bold text-amber-400 shrink-0">
-                  ★ {game.rating}
-                </span>
+                {game.available && (
+                  <span className="flex items-center gap-1 text-sm font-bold text-amber-400 shrink-0">
+                    ★ {game.rating}
+                  </span>
+                )}
               </div>
-              <button
-                type="button"
-                className="w-full h-11 mt-4 rounded-xl bg-[#22D3EE] hover:opacity-90 text-black text-sm font-bold transition-all"
-              >
-                Play Now
-              </button>
+
+              {game.available ? (
+                <Link
+                  href={`/dashboard/games/${game.slug}`}
+                  className="w-full h-11 mt-4 rounded-xl bg-[#22D3EE] hover:opacity-90 text-black text-sm font-bold transition-all flex items-center justify-center"
+                >
+                  Play Now
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full h-11 mt-4 rounded-xl bg-white/[0.04] border border-white/[0.05] text-gray-600 text-sm font-bold cursor-not-allowed"
+                >
+                  Coming Soon
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
     </div>
-    // </AppShell>
   );
 }
 

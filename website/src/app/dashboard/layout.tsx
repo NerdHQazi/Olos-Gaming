@@ -55,7 +55,7 @@ const navigation = [
   },
   {
     label: "Tournaments",
-    href: "/dashboard/tournaments",
+    href: "/tournaments",
     icon: Trophy,
     color: "gold",
   },
