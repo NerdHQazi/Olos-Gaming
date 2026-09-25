@@ -5,6 +5,7 @@ import {
   Bell,
   ChevronDown,
   CircleHelp,
+  Coins,
   Gamepad2,
   Store,
   LayoutDashboard,
@@ -17,8 +18,6 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { RiCoinsFill } from "react-icons/ri";
-import { FaEthereum } from "react-icons/fa";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { ethers } from "ethers";
@@ -55,7 +54,7 @@ const navigation = [
   {
     label: "Token",
     href: "/dashboard/token",
-    icon: RiCoinsFill,
+    icon: Coins,
   },
   {
     label: "Wallet",
@@ -303,7 +302,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   type="button"
                   className="hidden items-center gap-2 rounded-md rounded-[8px] bg-[#1A0A3C33] border border-[#2A1060] px-3 text-[14px] font-medium text-[#fff] sm:flex"
                 >
-                  <FaEthereum />
+                  <span className="text-base font-bold" aria-hidden="true">Ξ</span>
                   Ethereum
                   <ChevronDown size={16} color="#fff" />
                 </button>

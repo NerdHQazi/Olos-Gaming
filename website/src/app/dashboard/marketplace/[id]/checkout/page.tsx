@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import { marketplaceItems, promoBanner } from '../../marketplace.mock'
 import { notFound } from 'next/navigation';
-import BackButton from '../back-button';
 import Link from 'next/link';
 
 export default async function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,14 +10,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
 
   if (!item) return notFound();
 
-  // Mock cart: the selected item plus 2 other random distinct items.
-  const cartItems = [
-    item,
-    ...[...marketplaceItems]
-      .filter((i) => i.id !== item.id)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 2),
-  ];
+  const cartItems = [item, marketplaceItems[1], marketplaceItems[2]];
 
   const subtotalGvt = cartItems.reduce((sum, i) => sum + i.priceGvt, 0);
   const subtotalUsd = cartItems.reduce((sum, i) => sum + i.priceUsd, 0);
@@ -31,15 +23,14 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
   const hasSufficientBalance = remainingGvt >= 0;
 
   return (
-    <div className="w-full pt-4 pb-20 inter-normal flex flex-col gap-5">
-        <BackButton />
-        <h1 className='inter-extrabold text-[26px]'>Shopping Cart</h1>
+    <div className="w-full px-5 pt-7 pb-12 inter-normal flex flex-col gap-5 max-sm:px-4">
+        <h1 className='inter-extrabold text-[20px]'>Shopping Cart</h1>
         <div className="flex gap-5 items-start max-lg:flex-col">
-          <div className="flex flex-col gap-3 max-lg:w-full">
+          <div className="flex flex-1 flex-col gap-3 w-full">
             {cartItems.map((cartItem) => (
               <div
                 key={cartItem.id}
-                className='flex items-center justify-between min-w-3xl border p-3 bg-[#060A14CC] border-[#2A1060] rounded-lg gap-3 max-lg:min-w-0 max-lg:w-full max-sm:flex-col max-sm:items-start'
+                className='flex items-center justify-between w-full border p-3 bg-[#060A14CC] border-[#2A1060] rounded-lg gap-3 max-sm:flex-col max-sm:items-start'
               >
                 <div className="flex items-center gap-4 max-sm:w-full">
                     <Image
@@ -69,7 +60,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
               </div>
             ))}
           </div>
-          <div className="border p-3 w-full bg-[#060A14CC] border-[#2A1060] rounded-lg">
+          <div className="border p-3 w-[288px] shrink-0 bg-[#060A14CC] border-[#2A1060] rounded-lg max-lg:w-full">
             <h3 className='inter-bold text-[16px] mb-3'>Order Summary</h3>
             <div className="flex items-center mb-1 justify-between">
                <h4 className='inter-light text-[12px] text-[#A4B7EB]'>Subtotal</h4>
@@ -110,8 +101,8 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
             </Link>
           </div>
         </div>
-        <div className="flex items-center gap-4 max-sm:flex-col max-sm:items-stretch">
-          <input type="text" className='text-[12px] min-w-2xl p-2 inter-light bg-[#060A14CC] border border-[#2A1060] rounded-md outline-0 max-lg:min-w-0 max-lg:flex-1 max-sm:w-full' placeholder='Enter Promo Code' />
+        <div className="flex items-center gap-2 max-sm:flex-col max-sm:items-stretch">
+          <input type="text" className='text-[12px] flex-1 p-2 inter-light bg-[#060A14CC] border border-[#2A1060] rounded-md outline-0 max-sm:w-full' placeholder='Enter Promo Code' />
           <button className='text-[12px] text-[#20CEEE] inter-bold bg-[#1A0A3C99] border border-[#20CEEE] rounded-md py-2 px-5 max-sm:w-full'>Apply</button>
         </div>
     </div>

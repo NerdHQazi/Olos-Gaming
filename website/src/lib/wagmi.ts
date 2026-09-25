@@ -1,6 +1,6 @@
 import { cookieStorage, createStorage } from "wagmi";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { sepolia, type AppKitNetwork } from "@reown/appkit/networks";
+import { sepolia } from "viem/chains";
 
 export const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID;
 
@@ -10,7 +10,7 @@ if (!projectId) {
 
 // MVP: Sepolia testnet only.
 
-export const networks = [sepolia] as [AppKitNetwork, ...AppKitNetwork[]];
+export const networks = [sepolia] as const;
 
 export const wagmiAdapter = new WagmiAdapter({
   storage: createStorage({

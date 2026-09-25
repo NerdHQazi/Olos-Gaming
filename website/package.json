@@ -40,7 +40,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "lightningcss": "^1.30.2",
-    "lightningcss-linux-x64-gnu": "^1.30.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
