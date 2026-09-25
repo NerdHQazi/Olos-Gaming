@@ -13,6 +13,7 @@ import {
   UserRound,
   Wallet,
   X,
+  Club,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,6 +35,12 @@ const navigation = [
     label: "Game",
     href: "/dashboard/game",
     icon: Gamepad2,
+    active: true,
+  },
+  {
+    label: "Guild Hub",
+    href: "/dashboard/guild-hub",
+    icon: Club,
     active: true,
   },
   {
