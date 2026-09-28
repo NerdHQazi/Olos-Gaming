@@ -2,8 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yaml');
+const fs = require('fs');
+const path = require('path');
 const authRoutes = require('./routes/authRoutes');
 const internalRoutes = require('./routes/internalRoutes');
+
+// Load OpenAPI spec once at startup
+const openApiSpec = YAML.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'docs', 'openapi.yaml'), 'utf8')
+);
 
 const app = express();
 
@@ -49,6 +58,16 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/_internal', internalRoutes);
+
+// API Documentation — Swagger UI
+// Disable Helmet's CSP only for the /api/docs route (Swagger UI uses inline scripts)
+app.use('/api/docs', (req, res, next) => {
+  res.removeHeader('Content-Security-Policy');
+  next();
+}, swaggerUi.serve, swaggerUi.setup(openApiSpec, {
+  customSiteTitle: 'Olos Gaming API Docs',
+  swaggerOptions: { persistAuthorization: true },
+}));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

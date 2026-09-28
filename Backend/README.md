@@ -647,6 +647,19 @@ docker run -p 5000:5000 --env-file .env node:18 npm start
 
 ---
 
+## API Documentation
+
+The full API is documented with OpenAPI 3.1.0.
+
+| Resource | Location |
+|---|---|
+| OpenAPI spec (YAML) | [`Backend/docs/openapi.yaml`](./docs/openapi.yaml) |
+| Swagger UI (interactive) | `http://localhost:5000/api/docs` (when backend is running) |
+
+Start the backend (`npm run dev`) and open [http://localhost:5000/api/docs](http://localhost:5000/api/docs) to browse and try all endpoints interactively.
+
+---
+
 ## Related Documentation
 
 - **Frontend:** See `website/README.md`
