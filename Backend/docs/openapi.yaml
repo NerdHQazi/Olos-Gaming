@@ -1,0 +1,465 @@
+openapi: 3.1.0
+
+info:
+  title: Olos Gaming Backend API
+  version: 1.0.0
+  description: |
+    Express.js backend for the Olos Gaming platform.
+
+    **What this API handles:**
+    - Email/password user registration and login (via Supabase Auth)
+    - Server health checks
+    - Internal diagnostics (protected)
+
+    **What this API does NOT handle:**
+    - Google OAuth / social login — handled client-side via the Supabase JS SDK (`signInWithOAuth`)
+    - Password reset — handled client-side via the Supabase JS SDK (`resetPasswordForEmail`)
+    - Game logic, matchmaking, move validation — handled by Supabase Edge Functions and RPCs
+    - Wallet management — handled by Supabase database functions
+
+  contact:
+    name: Olos Gaming Team
+
+servers:
+  - url: http://localhost:5001
+    description: Local development server (default)
+
+tags:
+  - name: Auth
+    description: User authentication — email/password signup and login
+  - name: Health
+    description: Server and dependency health checks
+  - name: Internal
+    description: Protected internal diagnostics (not for public/frontend use)
+
+paths:
+
+  # ────────────────────────────────────────────────
+  # AUTH
+  # ────────────────────────────────────────────────
+
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: |
+        Creates a new user account in Supabase Auth.
+        Input is validated with Zod before being forwarded to Supabase.
+        On success, a Supabase user object is returned (note: email confirmation
+        may be required depending on Supabase project settings).
+
+        **Rate limit:** 100 requests per IP per 15 minutes.
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            example:
+              fullName: "Jane Doe"
+              username: "janedoe"
+              email: "jane@example.com"
+              password: "SecurePass123!"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+              example:
+                success: true
+                message: "User registered successfully"
+                user:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  email: "jane@example.com"
+                  fullName: "Jane Doe"
+                  username: "janedoe"
+        '400':
+          description: Validation failed or user already exists
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ValidationError'
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validation_failed:
+                  summary: Zod validation error
+                  value:
+                    success: false
+                    message: "Validation failed"
+                    errors:
+                      - field: "body.password"
+                        message: "Password must contain at least one uppercase letter"
+                user_exists:
+                  summary: Email already registered
+                  value:
+                    success: false
+                    message: "User already registered"
+        '503':
+          description: Supabase connection error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Backend connectivity error: Unable to reach database. Please check if Supabase is active."
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate a user
+      description: |
+        Authenticates an existing user with email and password via Supabase Auth.
+        Returns a Supabase session (access token + refresh token) on success.
+        The returned `access_token` should be used as a Bearer token for
+        subsequent requests to Supabase Edge Functions.
+
+        **Rate limit:** 100 requests per IP per 15 minutes.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "jane@example.com"
+              password: "SecurePass123!"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                success: true
+                message: "Login successful"
+                session:
+                  access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refresh_token: "v1.Mx8fTk..."
+                  token_type: "bearer"
+                  expires_in: 3600
+                  expires_at: 1756396800
+                user:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  email: "jane@example.com"
+                  aud: "authenticated"
+                  created_at: "2026-08-17T12:00:00Z"
+        '400':
+          description: Input validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                success: false
+                message: "Validation failed"
+                errors:
+                  - field: "body.email"
+                    message: "Invalid email address"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Invalid login credentials"
+        '503':
+          description: Supabase connection error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Backend connectivity error: Unable to reach database. Please check if Supabase is active."
+
+  # ────────────────────────────────────────────────
+  # HEALTH
+  # ────────────────────────────────────────────────
+
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Server health check
+      description: |
+        Public endpoint confirming the Express server is running.
+        Returns the process uptime in seconds.
+        Use for uptime monitoring and deployment readiness checks.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "ok"
+                uptime: 3742.51
+
+  # ────────────────────────────────────────────────
+  # INTERNAL (Protected)
+  # ────────────────────────────────────────────────
+
+  /api/_internal/supabase-health:
+    get:
+      tags: [Internal]
+      summary: Supabase connectivity check (protected)
+      description: |
+        Performs a live read query against the `profiles` table to verify
+        Supabase connectivity. Requires the `x-internal-token` header matching
+        the server's `INTERNAL_DEBUG_TOKEN` environment variable.
+
+        **This endpoint is for internal debugging only — do not call from
+        production frontend code.**
+
+        **Rate limit:** 100 requests per IP per 15 minutes (shared with all `/api/*`).
+      operationId: supabaseHealthCheck
+      security:
+        - InternalToken: []
+      responses:
+        '200':
+          description: Supabase is reachable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupabaseHealthResponse'
+              example:
+                success: true
+                message: "Supabase reachable"
+                sampleRows: 1
+        '403':
+          description: Missing or invalid internal token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Forbidden"
+        '500':
+          description: Server-side token not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Internal debug token not configured on server"
+        '502':
+          description: Supabase query failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Supabase call failed"
+
+# ────────────────────────────────────────────────
+# COMPONENTS
+# ────────────────────────────────────────────────
+
+components:
+
+  securitySchemes:
+    InternalToken:
+      type: apiKey
+      in: header
+      name: x-internal-token
+      description: >
+        Secret token for internal diagnostic endpoints. Must match the
+        `INTERNAL_DEBUG_TOKEN` environment variable on the server.
+
+  schemas:
+
+    # ── Request bodies ──────────────────────────
+
+    SignupRequest:
+      type: object
+      required: [fullName, username, email, password]
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          description: User's full display name
+          example: "Jane Doe"
+        username:
+          type: string
+          minLength: 3
+          description: Unique username for the platform
+          example: "janedoe"
+        email:
+          type: string
+          format: email
+          description: Valid email address
+          example: "jane@example.com"
+        password:
+          type: string
+          minLength: 8
+          description: |
+            Password must contain:
+            - At least 8 characters
+            - At least one uppercase letter (A–Z)
+            - At least one lowercase letter (a–z)
+            - At least one digit (0–9)
+            - At least one special character (e.g. `!@#$%^&*`)
+          example: "SecurePass123!"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "jane@example.com"
+        password:
+          type: string
+          minLength: 1
+          example: "SecurePass123!"
+
+    # ── Response bodies ─────────────────────────
+
+    SignupResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "User registered successfully"
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Supabase auth user UUID
+            email:
+              type: string
+              format: email
+            fullName:
+              type: string
+            username:
+              type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Login successful"
+        session:
+          $ref: '#/components/schemas/SupabaseSession'
+        user:
+          $ref: '#/components/schemas/SupabaseUser'
+
+    SupabaseSession:
+      type: object
+      description: Supabase Auth session object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token — use as Bearer token for Supabase Edge Function requests
+        refresh_token:
+          type: string
+          description: Opaque refresh token for obtaining a new access token
+        token_type:
+          type: string
+          example: "bearer"
+        expires_in:
+          type: integer
+          description: Seconds until the access token expires (typically 3600)
+          example: 3600
+        expires_at:
+          type: integer
+          description: Unix timestamp at which the access token expires
+          example: 1756396800
+
+    SupabaseUser:
+      type: object
+      description: Supabase Auth user object (subset of fields)
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        aud:
+          type: string
+          example: "authenticated"
+        created_at:
+          type: string
+          format: date-time
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        uptime:
+          type: number
+          description: Server process uptime in seconds
+          example: 3742.51
+
+    SupabaseHealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Supabase reachable"
+        sampleRows:
+          type: integer
+          description: Number of rows returned from the health probe query (0 or 1)
+          example: 1
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "An error occurred"
+
+    ValidationError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Validation failed"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: Dot-separated path to the failing field (e.g. `body.password`)
+                example: "body.password"
+              message:
+                type: string
+                description: Human-readable validation error
+                example: "Password must contain at least one uppercase letter"
