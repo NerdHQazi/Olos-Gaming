@@ -14,6 +14,7 @@ import {
   Wallet,
   X,
   Club,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,87 +25,26 @@ import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { ethers } from "ethers";
 import { useWallet } from "@/context/WalletContext";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 type DashboardLayoutProps = {
   children: ReactNode;
 };
 
 const navigation = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Game",
-    href: "/dashboard/games",
-    icon: Gamepad2,
-    active: true,
-  },
-  {
-    label: "Guild Hub",
-    href: "/dashboard/guild-hub",
-    icon: Club,
-    active: true,
-  },
-  {
-    label: "Leaderboard",
-    href: "/dashboard/leaderboard",
-    icon: Trophy,
-    color: "gold",
-  },
-  {
-    label: "Tournaments",
-    href: "/tournaments",
-    icon: Trophy,
-    color: "gold",
-  },
-  {
-    label: "Token",
-    href: "/dashboard/token",
-    icon: RiCoinsFill,
-  },
-  {
-    label: "Wallet",
-    href: "/dashboard/wallet",
-    icon: Wallet,
-  },
-  {
-    label: "Marketplace",
-    href: "/dashboard/marketplace",
-    icon: Store,
-  },
-  {
-    label: "Profile",
-    href: "/dashboard/profile",
-    icon: UserRound,
-  },
-  {
-    label: "How it works",
-    href: "/how-it-works",
-    icon: CircleHelp,
-    color: "red",
-  },
-  {
-    label: "Support",
-    href: "/support",
-    icon: CircleHelp,
-  },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Game", href: "/dashboard/games", icon: Gamepad2, active: true },
+  { label: "Guild Hub", href: "/dashboard/guild-hub", icon: Club, active: true },
+  { label: "Leaderboard", href: "/dashboard/leaderboard", icon: Trophy, color: "gold" },
+  { label: "Tournaments", href: "/dashboard/tournaments", icon: Trophy, color: "gold" },
+  { label: "Token", href: "/dashboard/token", icon: RiCoinsFill },
+  { label: "Wallet", href: "/dashboard/wallet", icon: Wallet },
+  { label: "Marketplace", href: "/dashboard/marketplace", icon: Store },
+  { label: "Profile", href: "/dashboard/profile", icon: UserRound },
+  { label: "How it works", href: "/how-it-works", icon: CircleHelp, color: "red" },
+  { label: "Support", href: "/support", icon: CircleHelp },
 ];
-
-// const truncateWalletAddress = (
-//   address: string,
-//   startLength = 6,
-//   endLength = 4,
-// ): string => {
-//   if (!address) return "";
-
-//   if (address.length <= startLength + endLength) {
-//     return address;
-//   }
-
-//   return `${address.slice(0, startLength)}...${address.slice(-endLength)}`;
-// };
 
 const GVT_ADDRESS = "0xDE0Bd309CbCaf5E6fBc7e05660E7BCb83520C3fC";
 const GVT_ABI = [
@@ -116,13 +56,25 @@ const GVT_ABI = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [ethAddress, setEthAddress] = useState("");
   const [isFetchingChain, setIsFetchingChain] = useState(false);
   const router = useRouter();
   const { isConnected, address } = useAppKitAccount();
   const [onChainBalance, setOnChainBalance] = useState<string | null>(null);
   const pathname = usePathname();
   const { balance: web2Balance, isLoading: walletLoading } = useWallet();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      if (logout) logout();
+      localStorage.clear();
+      router.push("/auth/signin");
+    } catch (error) {
+      console.error("Logout error:", error);
+      router.push("/");
+    }
+  };
 
   const getProvider = useCallback(() => {
     if (typeof window === "undefined") return null;
@@ -171,17 +123,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const displayUSD = `≈ $${(parseFloat(rawBalance) * 0.25).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
   const isLoadingBal = isConnected ? isFetchingChain : walletLoading;
 
-  console.log(displayBalance, displayUSD);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const address = localStorage.getItem("eth_address");
-      if (address) {
-        setEthAddress(address);
-      }
-    }
-  }, []);
-
   return (
     <div className="max-h-screen h-screen bg-[#03060d] text-white">
       <div className="flex max-h-screen">
@@ -193,12 +134,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex h-[68px] items-center justify-between border-b border-[#151d35] px-5">
             <a href="/dashboard" className="flex items-center gap-2">
               <div className="relative">
-                {/* <div className="text-[20px] font-black tracking-tight text-[#20ceee]">
-                  OLOS
-                </div>
-                <div className="absolute -right-7 -top-1 rounded border border-[#33405e] px-1 py-[1px] text-[6px] font-bold text-[#7783a5]">
-                  BETA
-                </div> */}
                 <Image
                   src="/OLOS_logo.svg"
                   alt="Olos Logo"
@@ -219,7 +154,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
           </div>
 
-          <div className="flex flex-1 flex-col overflow-y-auto px-3 py-5">
+          <div className="flex flex-1 flex-col overflow-y-auto px-3 py-5 justify-between">
             <nav className="space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
@@ -236,9 +171,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     }`}
                   >
                     <Icon
-                      style={{
-                        color: item?.color || "#fff",
-                      }}
+                      style={{ color: item?.color || "#fff" }}
                       size={18}
                       strokeWidth={item.active ? 2.5 : 1.8}
                       className="group-hover:text-[#20ceee]"
@@ -249,7 +182,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               })}
             </nav>
 
-            <div className="mt-auto pt-8">
+            {/* Bottom Actions Area */}
+            <div className="pt-6 space-y-4">
               <div className="rounded-lg border-[2px] border-[#2A1060] bg-[#1A0A3C33] p-3">
                 <div className="mb-1 text-[14px] font-black text-white">
                   Invite & Earn
@@ -274,6 +208,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   GET LINK
                 </button>
               </div>
+
+              {/* Logout Button */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="group flex w-full h-10 items-center gap-3 rounded-[12px] px-3 text-[14px] font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-all active:scale-95"
+              >
+                <LogOut size={18} className="text-red-400 group-hover:rotate-12 transition-transform" />
+                <span>Log Out</span>
+              </button>
             </div>
           </div>
         </aside>
@@ -299,10 +243,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 >
                   <Menu size={18} />
                 </button>
-
-                <h1 className="truncate text-sm font-bold text-white sm:text-[24px]">
-                  {/* Match Results */}
-                </h1>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
@@ -316,15 +256,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </button>
 
                 <Link
-                  href="/wallet"
+                  href="/dashboard/wallet"
                   className="hidden rounded-[8px] border border-[#2A1060] bg-[#1A0A3C] px-3 py-1 sm:block"
                 >
                   <div className="text-[11px] font-medium text-[#A4B7EB]">
                     GVT Balance
                   </div>
-                  {isLoadingBal ? (
-                    <></>
-                  ) : (
+                  {!isLoadingBal && (
                     <div className="text-[16px] font-bold text-[#4CD7F6]">
                       {displayBalance}
                       <span className="ml-1 text-[11px] font-normal text-[#A4B7EB]">
@@ -335,26 +273,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Link>
 
                 <ConnectWalletButton variant="navbar" />
-
-                {/* <button
-                  onClick={() => {
-                    if (!ethAddress) {
-                      router.push("/connect");
-                    }
-                  }}
-                  type="button"
-                  className="flex h-8 items-center gap-2 rounded-md border border-[#2A1060] bg-[#1A0A3C1A] px-2 sm:px-3"
-                >
-                  <span className="h-4 w-4 rounded-full bg-gradient-to-br from-[#f7b267] via-[#d35b4e] to-[#253b80]" />
-                  <span className="hidden text-[14px] font-semibold text-[#c1c9db] sm:block">
-                    {ethAddress
-                      ? truncateWalletAddress(ethAddress)
-                      : "Connect Wallet"}
-                  </span>
-                  {ethAddress && (
-                    <ChevronDown size={16} className="text-[#fff]" />
-                  )}
-                </button> */}
 
                 <button
                   type="button"
