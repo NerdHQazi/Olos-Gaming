@@ -22,12 +22,98 @@ export interface Guild {
   totalWins?: number; // shown on the leaderboard
   totalEarned?: number; // GVT, shown on the leaderboard
   isUserGuild?: boolean; // highlights this row as "Your Guild" on the leaderboard
+  winRatePercentileLabel?: string; // e.g. "Top 1.5% worldwide", shown on the guild profile
+  stakedUsdEstimate?: number; // shown alongside totalStaked on the guild profile
+  tierBracket?: string; // e.g. "Elite I"
+  tierNote?: string; 
+  recruitmentRulesSummary?: string; // shown on the Settings tab
+  stakingTaxPercent?: number; // e.g. 10
+  draftAnnouncement?: string; // pre-filled text in the announcement composer
 }
 
 export interface ApplicantStats {
   winRate: number; // percentage, e.g. 74.8
   totalMatches: number;
   gvtEarned: number;
+}
+
+export interface GuildMember {
+  id: string;
+  guildId: string;
+  username: string;
+  avatarUrl: string;
+  role: "Leader" | "Officer" | "Member";
+  winRate: number; // percentage
+  isOnline: boolean;
+}
+ 
+export interface ChatMessage {
+  id: string;
+  guildId: string;
+  username: string;
+  message: string;
+}
+ 
+export interface UpcomingBattle {
+  id: string;
+  guildId: string;
+  opponentName: string;
+  stakeAmount: number;
+  currency: string;
+  scheduleLabel: string; // e.g. "Tonight, 8:30 PM"
+}
+
+export interface ActiveWar {
+  id: string;
+  guildId: string;
+  opponentName: string;
+  opponentIconUrl: string;
+  ourScore: number;
+  opponentScore: number;
+  stakeAmount: number;
+  currency: string;
+  timeRemainingLabel: string; // e.g. "1 Hour 20 Mins Remaining in Bracket Matchup"
+}
+ 
+export interface GuildWarBattle {
+  id: string;
+  guildId: string;
+  opponentName: string;
+  opponentShortName?: string;
+  opponentIconUrl: string;
+  scheduleLabel: string; // e.g. "Jan 26, 9:00 PM UTC"
+  gameType: string; // e.g. "Chess Arena"
+  stakeAmount: number;
+  currency: string;
+}
+ 
+export interface BattleHistoryEntry {
+  id: string;
+  guildId: string;
+  opponentName: string;
+  arena: string;
+  result: "Victory" | "Defeat";
+  amount: number; // signed, e.g. 1200 or -800
+  currency: string;
+}
+
+export interface IncomeBreakdownItem {
+  id: string;
+  guildId: string;
+  label: string; // e.g. "Match Winnings"
+  percent: number; // e.g. 65
+  amount: number; // e.g. 29700
+  currency: string;
+}
+ 
+export interface TreasuryTransaction {
+  id: string;
+  guildId: string;
+  type: string; // e.g. "Match Winnings (GvG)"
+  member: string; // username, or "Guild Pool" / "Team CS" for collective entries
+  amount: number; // signed, e.g. 2000 or -500
+  currency: string;
+  dateLabel: string; // e.g. "Today", "Yesterday", "Jan 22"
 }
 
 // ---------------------------------------------------------------------------
@@ -56,6 +142,10 @@ export const mockGuilds: Guild[] = [
     stakingDuesPerMonth: 50,
     totalWins: 2840,
     totalEarned: 45800,
+    winRatePercentileLabel: "Top 1.5% worldwide",
+    stakedUsdEstimate: 4580.0,
+    tierBracket: "Elite I",
+    tierNote: "Promoted last season",
   },
   {
     id: "guild-002",
@@ -72,6 +162,10 @@ export const mockGuilds: Guild[] = [
     totalWins: 2840,
     totalEarned: 45800,
     isUserGuild: true,
+    winRatePercentileLabel: "Top 1.5% worldwide",
+    stakedUsdEstimate: 4580.0,
+    tierBracket: "Elite I",
+    tierNote: "Promoted last season",
   },
   {
     id: "guild-003",
@@ -161,6 +255,247 @@ export const mockApplicantStats: ApplicantStats = {
   gvtEarned: 12400,
 };
 
+export const mockGuildMembers: GuildMember[] = [
+  {
+    id: "member-001",
+    guildId: "guild-001",
+    username: "SnakeGod99",
+    avatarUrl: "/AvatarGirl.png",
+    role: "Leader",
+    winRate: 74.8,
+    isOnline: true,
+  },
+  {
+    id: "member-002",
+    guildId: "guild-001",
+    username: "ViperKing",
+    avatarUrl: "/AvatarGirl.png",
+    role: "Officer",
+    winRate: 69.1,
+    isOnline: true,
+  },
+  {
+    id: "member-003",
+    guildId: "guild-001",
+    username: "CyberCobra",
+    avatarUrl: "/AvatarGirl.png",
+    role: "Officer",
+    winRate: 68.5,
+    isOnline: false,
+  },
+  {
+    id: "member-004",
+    guildId: "guild-001",
+    username: "VenomHunter",
+    avatarUrl: "/AvatarGirl.png",
+    role: "Member",
+    winRate: 61.3,
+    isOnline: true,
+  },
+  {
+    id: "member-005",
+    guildId: "guild-001",
+    username: "Constrictor",
+    avatarUrl: "/AvatarGirl.png",
+    role: "Member",
+    winRate: 58.9,
+    isOnline: true,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Guild chat preview
+// ---------------------------------------------------------------------------
+ 
+export const mockChatPreview: ChatMessage[] = [
+  {
+    id: "chat-001",
+    guildId: "guild-001",
+    username: "ViperKing",
+    message: "Are we matching tonight for tournament bracket?",
+  },
+  {
+    id: "chat-002",
+    guildId: "guild-001",
+    username: "SnakeGod99",
+    message: "Yeah, starting lobby at 8 PM UTC.",
+  },
+  {
+    id: "chat-003",
+    guildId: "guild-001",
+    username: "VenomHunter",
+    message: "Count me in, let's stake 100 GVT.",
+  },
+];
+ 
+// ---------------------------------------------------------------------------
+// Upcoming guild battles
+// ---------------------------------------------------------------------------
+ 
+export const mockUpcomingBattles: UpcomingBattle[] = [
+  {
+    id: "battle-001",
+    guildId: "guild-001",
+    opponentName: "Eth Warriors",
+    stakeAmount: 500,
+    currency: "GVT",
+    scheduleLabel: "Tonight, 8:30 PM",
+  },
+  {
+    id: "battle-002",
+    guildId: "guild-001",
+    opponentName: "Meta Cobras",
+    stakeAmount: 1600,
+    currency: "GVT",
+    scheduleLabel: "Tomorrow, 9:00 PM",
+  },
+];
+
+
+// ---------------------------------------------------------------------------
+// Active guild war
+// ---------------------------------------------------------------------------
+ 
+export const mockActiveWars: ActiveWar[] = [
+  {
+    id: "war-001",
+    guildId: "guild-001",
+    opponentName: "Eth Warriors",
+    opponentIconUrl: "/guilds/ethWarriorsImage.png",
+    ourScore: 14,
+    opponentScore: 12,
+    stakeAmount: 2000,
+    currency: "GVT",
+    timeRemainingLabel: "1 Hour 20 Mins Remaining in Bracket Matchup",
+  },
+];
+ 
+// ---------------------------------------------------------------------------
+// Guild war upcoming battles (richer than the roster-tab quick list)
+// ---------------------------------------------------------------------------
+ 
+export const mockGuildWarBattles: GuildWarBattle[] = [
+  {
+    id: "warbattle-001",
+    guildId: "guild-001",
+    opponentName: "Web3 Wizards",
+    opponentShortName: "W3W",
+    opponentIconUrl: "/guilds/web3WizardImage.png",
+    scheduleLabel: "Jan 26, 9:00 PM UTC",
+    gameType: "Chess Arena",
+    stakeAmount: 1000,
+    currency: "GVT",
+  },
+  {
+    id: "warbattle-002",
+    guildId: "guild-001",
+    opponentName: "Meta Cobras",
+    opponentShortName: "MC",
+    opponentIconUrl: "/guilds/metaCobraImage.png",
+    scheduleLabel: "Jan 28, 10:30 PM UTC",
+    gameType: "Snake Xenzia",
+    stakeAmount: 900,
+    currency: "GVT",
+  },
+];
+ 
+// ---------------------------------------------------------------------------
+// Battle history
+// ---------------------------------------------------------------------------
+ 
+export const mockBattleHistory: BattleHistoryEntry[] = [
+  {
+    id: "history-001",
+    guildId: "guild-001",
+    opponentName: "Alpha Blitzers",
+    arena: "Snake Pool Arena",
+    result: "Victory",
+    amount: 1200,
+    currency: "GVT",
+  },
+  {
+    id: "history-002",
+    guildId: "guild-001",
+    opponentName: "Giga GVT Stakers",
+    arena: "Snake Pool Arena",
+    result: "Defeat",
+    amount: -800,
+    currency: "GVT",
+  },
+  {
+    id: "history-003",
+    guildId: "guild-001",
+    opponentName: "Eth Warriors",
+    arena: "Snake Pool Arena",
+    result: "Victory",
+    amount: 2000,
+    currency: "GVT",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Treasury income breakdown
+// ---------------------------------------------------------------------------
+ 
+export const mockIncomeBreakdown: IncomeBreakdownItem[] = [
+  { id: "income-001", guildId: "guild-001", label: "Match Winnings", percent: 65, amount: 29700, currency: "GVT" },
+  { id: "income-002", guildId: "guild-001", label: "Member Dues", percent: 20, amount: 9100, currency: "GVT" },
+  { id: "income-003", guildId: "guild-001", label: "Tournament Prizes", percent: 15, amount: 6800, currency: "GVT" },
+];
+
+// ---------------------------------------------------------------------------
+// Treasury audit trail
+// ---------------------------------------------------------------------------
+ 
+export const mockTreasuryTransactions: TreasuryTransaction[] = [
+  {
+    id: "txn-001",
+    guildId: "guild-001",
+    type: "Match Winnings (GvG)",
+    member: "Guild Pool",
+    amount: 2000,
+    currency: "GVT",
+    dateLabel: "Today",
+  },
+  {
+    id: "txn-002",
+    guildId: "guild-001",
+    type: "Payout Distribution",
+    member: "SnakeGod99",
+    amount: -500,
+    currency: "GVT",
+    dateLabel: "Yesterday",
+  },
+  {
+    id: "txn-003",
+    guildId: "guild-001",
+    type: "Member Monthly Dues",
+    member: "ViperKing",
+    amount: 50,
+    currency: "GVT",
+    dateLabel: "Jan 22",
+  },
+  {
+    id: "txn-004",
+    guildId: "guild-001",
+    type: "Tournament Prize Pool",
+    member: "Team CS",
+    amount: 5000,
+    currency: "GVT",
+    dateLabel: "Jan 18",
+  },
+  {
+    id: "txn-005",
+    guildId: "guild-001",
+    type: "Hardware Expense Payout",
+    member: "ViperKing",
+    amount: -150,
+    currency: "GVT",
+    dateLabel: "Jan 15",
+  },
+];
+ 
+
 // ---------------------------------------------------------------------------
 // Helper functions
 // ---------------------------------------------------------------------------
@@ -196,4 +531,34 @@ export function rankGuildsByWins(guilds: Guild[]): Guild[] {
   return [...guilds].sort((a, b) => (b.totalWins ?? 0) - (a.totalWins ?? 0));
 }
  
+export function getMembersByGuildId(guildId: string): GuildMember[] {
+  return mockGuildMembers.filter((m) => m.guildId === guildId);
+}
  
+export function getChatPreviewByGuildId(guildId: string): ChatMessage[] {
+  return mockChatPreview.filter((c) => c.guildId === guildId);
+}
+ 
+export function getUpcomingBattlesByGuildId(guildId: string): UpcomingBattle[] {
+  return mockUpcomingBattles.filter((b) => b.guildId === guildId);
+}
+
+export function getActiveWarByGuildId(guildId: string): ActiveWar | undefined {
+  return mockActiveWars.find((w) => w.guildId === guildId);
+}
+ 
+export function getGuildWarBattlesByGuildId(guildId: string): GuildWarBattle[] {
+  return mockGuildWarBattles.filter((b) => b.guildId === guildId);
+}
+ 
+export function getBattleHistoryByGuildId(guildId: string): BattleHistoryEntry[] {
+  return mockBattleHistory.filter((h) => h.guildId === guildId);
+}
+
+export function getIncomeBreakdownByGuildId(guildId: string): IncomeBreakdownItem[] {
+  return mockIncomeBreakdown.filter((i) => i.guildId === guildId);
+}
+ 
+export function getTreasuryTransactionsByGuildId(guildId: string): TreasuryTransaction[] {
+  return mockTreasuryTransactions.filter((t) => t.guildId === guildId);
+}
