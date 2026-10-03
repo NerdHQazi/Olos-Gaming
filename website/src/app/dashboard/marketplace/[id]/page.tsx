@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import { marketplaceItems, promoBanner } from '../marketplace.mock'
 import { notFound } from 'next/navigation';
-import BackButton from './back-button'
 import Link from 'next/link';
 
 
@@ -12,11 +11,14 @@ export default async function MarketplaceItemPage({ params }: { params: Promise<
 
   if (!item) return notFound();
 
+    const relatedItems = marketplaceItems.filter((related) =>
+        ['item-002', 'item-003', 'item-004'].includes(related.id),
+    );
+
   return (
-    <div className="w-full pt-4 pb-20 inter-normal flex flex-col gap-5">
-        <BackButton /> 
-        <div className="flex gap-5 items-start max-lg:flex-col">
-            <div className='flex flex-col items-center min-w-3xl h-104 border p-3 bg-[#060A14CC] border-[#2A1060] rounded-lg gap-3 max-lg:min-w-0 max-lg:w-full max-lg:h-88 max-sm:h-72'>
+        <div className="w-full px-5 pt-6 pb-12 inter-normal flex flex-col gap-5 max-sm:px-4">
+                <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-5 items-start max-lg:flex max-lg:flex-col">
+                    <div className='flex flex-col items-center w-full h-[222px] border p-3 bg-[#060A14CC] border-[#2A1060] rounded-lg gap-3 max-lg:h-[300px] max-sm:h-[250px]'>
                 <div className='w-full justify-end flex'>
                     <div className='flex text-[#20CEEE] bg-[#20CEEE22] border border-[#20CEEE] rounded-sm inter-bold text-[10px] px-2 py-1'>3D PREVIEW ACTIVE</div>
                 </div>
@@ -30,7 +32,7 @@ export default async function MarketplaceItemPage({ params }: { params: Promise<
                 </div>
                 <p className="text-[#908FA0] text-[11px] inter-light">Drag to rotate 360° · Animated cyber spine emissive shaders</p>
             </div>
-            <div className='flex flex-col gap-1 w-full'>
+            <div className='flex flex-col gap-1 min-w-0 w-full'>
                 <div className="flex gap-2">
                     <h4 className={` inter-bold text-[9px] px-2 py-0.5 rounded-2xl w-fit 
                             ${item.badge === "LEGENDARY" && 'text-[#F59E0B] bg-[#F59E0B22]'} 
@@ -72,13 +74,9 @@ export default async function MarketplaceItemPage({ params }: { params: Promise<
                 </Link>
             </div>
         </div>
-        <h2 className='inter-extrabold text-[19px] text-white my-3'>Related Skins & Items</h2>
+        <h2 className='inter-extrabold text-[19px] text-white mt-5'>Related Skins & Items</h2>
         <div className='grid grid-cols-3 gap-5 max-lg:grid-cols-2 max-sm:grid-cols-1'>
-            {[...marketplaceItems]
-                .filter((related) => related.id !== item.id)
-                .sort(() => Math.random() - 0.5)
-                .slice(0, 3)
-                .map((related) => (
+            {relatedItems.map((related) => (
                     <Link href={`/dashboard/marketplace/${related.id}`} key={related.id} className='border py-4 px-2 gap-2 flex flex-col bg-[#060A14CC] border-[#2A1060] rounded-lg'>
                         <Image src={`${related.imageUrl}`} alt={related.name} width={270} height={150} className="rounded-lg w-full h-auto" />
                         <h4 className={` inter-bold text-[9px] px-2 py-0.5 rounded-2xl w-fit 

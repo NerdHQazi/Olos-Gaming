@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { marketplaceItems, promoBanner } from '../../../marketplace.mock';
-import BackButton from '../../back-button';
 import Link from 'next/link';
 
 export default async function ConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,36 +10,16 @@ export default async function ConfirmationPage({ params }: { params: Promise<{ i
 
   if (!item) return notFound();
 
-  // Mock cart: the selected item plus 2 other random distinct items.
-  const cartItems = [
-    item,
-    ...[...marketplaceItems]
-      .filter((i) => i.id !== item.id)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 2),
-  ];
-
-  const subtotalGvt = cartItems.reduce((sum, i) => sum + i.priceGvt, 0);
-  const subtotalUsd = cartItems.reduce((sum, i) => sum + i.priceUsd, 0);
-  const platformFeeGvt = subtotalGvt * 0.025;
-  const totalGvt = subtotalGvt + platformFeeGvt;
-  const totalUsd = subtotalUsd * 1.025;
-
-  const userBalanceGvt = 2808; // placeholder balance
-  const remainingGvt = userBalanceGvt - totalGvt;
-  const hasSufficientBalance = remainingGvt >= 0;
-
   return (
-    <div className="w-full pt-4 pb-20 inter-normal flex flex-col gap-5">
-        <BackButton />
-        <div className="w-full h-full flex justify-center max-sm:px-1">
-            <div className="border p-5 bg-[#060A14CC] border-[#2A1060] rounded-lg flex flex-col items-center gap-3 max-sm:w-full max-sm:p-4">
-                <Image src='/check.png' alt='check mark' width={60} height={60} />
-                <h3 className='inter-extrabold text-[26px] max-sm:text-[22px] text-center'>Purchase Complete!</h3>
+    <div className="w-full px-5 pt-10 pb-12 inter-normal flex flex-col gap-5 max-sm:px-4">
+        <div className="w-full flex justify-center">
+            <div className="border p-5 w-[420px] bg-[#060A14CC] border-[#2A1060] rounded-lg flex flex-col items-center gap-3 max-sm:w-full max-sm:p-4">
+                <Image src='/check.png' alt='check mark' width={52} height={52} />
+                <h3 className='inter-extrabold text-[20px] text-center'>Purchase Complete!</h3>
                 <p className='text-[#908FA0] text-[12px] inter-light text-center'>Your Web3 assets have been minted and transferred to your connected wallet.</p>
                 <div
                     key={item.id}
-                    className='flex items-center justify-between min-w-xl border p-3 bg-[#1A0A3C99] border-[#2A1060] rounded-lg gap-3 max-lg:min-w-0 max-lg:w-full max-sm:flex-col max-sm:items-start'
+                    className='flex items-center justify-between w-full border p-3 bg-[#1A0A3C99] border-[#2A1060] rounded-lg gap-3'
                     >
                     <div className="flex items-center gap-4 max-sm:w-full">
                         <Image
@@ -74,13 +53,13 @@ export default async function ConfirmationPage({ params }: { params: Promise<{ i
                     <h4 className='text-[#A4B7EB] inter-light text-[11px]'> Network Status</h4>
                     <h4 className='inter-bold text-[#10B981] text-[11px]'>Confirmed (12 Block Confirmations)</h4>
                 </div>
-                <div className="flex gap-5 mt-10 items-center max-sm:w-full max-sm:flex-col max-sm:gap-3 max-sm:mt-6">
-                    <Link href={`/dashboard/marketplace/`} className=" inter-bold text-[13px] border-[#2A1060] border hover:bg-[#160f23] text-[#A4B7EB] py-3 px-4 rounded-md transition duration-300 flex items-center justify-center min-w-60 max-sm:min-w-0 max-sm:w-full">
+                <div className="flex gap-2 mt-7 items-center w-full">
+                    <Link href={`/dashboard/marketplace/`} className="inter-bold text-[10px] border-[#2A1060] border hover:bg-[#160f23] text-[#A4B7EB] py-2 px-3 rounded-md transition duration-300 flex items-center justify-center flex-1">
                         Continue Shopping
                     </Link>
                     <Link
-                        className='bg-[#20CEEE] disabled:opacity-40 disabled:cursor-not-allowed py-3 px-4 rounded-lg text-[#050810] min-w-60 flex justify-center  inter-extrabold text-[14px] max-sm:min-w-0 max-sm:w-full'
-                        href={`/dashobard`}
+                        className='bg-[#20CEEE] disabled:opacity-40 disabled:cursor-not-allowed py-2 px-3 rounded-md text-[#050810] flex-1 flex justify-center inter-extrabold text-[10px]'
+                        href={`/dashboard`}
                         // disabled={!hasSufficientBalance}
                     >
                         View Inventory
