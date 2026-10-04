@@ -159,7 +159,6 @@ while not done:
         if game.state == "start":
             game.go_down()
             game.level = int(game.broken_lines/5)+1 #Increases the level every 5 lines broken. Level always starts at one unless this is changed.
-            print(game.broken_lines, game.level) #Get rid of this line during deployment.
         
             #Level 12 is the framerate limit
             if game.level >= 12:

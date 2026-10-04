@@ -10,7 +10,7 @@ import unittest
 os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
 os.environ.setdefault('SDL_AUDIODRIVER', 'dummy')
 
-from checkers_game import (BOARD_SIZE, CELL_SIZE, RED, BLK, MAN,
+from checkers_game import (BOARD_SIZE, CELL_SIZE, RED, BLK, MAN, KING,
                            capture_moves, normal_moves, legal_moves_for,
                            apply_move, CheckersGame)
 
@@ -125,13 +125,13 @@ class TestCheckersCaptureLogic(unittest.TestCase):
         place(board, 5, 2, RED)
         place(board, 4, 3, BLK)   # chain start: 2-capture route
         place(board, 2, 5, BLK)
-        place(board, 6, 1, BLK)   # single-capture route
+        place(board, 4, 1, BLK)   # single-capture route
 
         moves = capture_moves(board, 5, 2)
         self.assertEqual(len(moves), 2)
         targets = {(m['to'], tuple(m['captured'])) for m in moves}
         self.assertIn(((1, 6), ((4, 3), (2, 5))), targets)
-        self.assertIn(((7, 0), ((6, 1),)), targets)
+        self.assertIn(((3, 0), ((4, 1),)), targets)
         for m in moves:
             self.assertEqual(m['from'], (5, 2))
 
@@ -260,6 +260,179 @@ class TestCheckersGameFlow(unittest.TestCase):
         # Opponent's piece can be selected with legal moves available.
         self.click(0, 1)
         self.assertTrue(self.game.state['legal_moves'])
+
+
+class TestCheckersCaptureDirection(unittest.TestCase):
+    """Men capture forward only; kings capture in all four directions."""
+
+    def test_red_man_cannot_capture_backward(self):
+        # RED man at (4,3) moving up; the only opponent piece is at (5,2),
+        # which would be a backward capture landing on (6,1).
+        board = make_board()
+        place(board, 4, 3, RED)
+        place(board, 5, 2, BLK)
+
+        self.assertEqual(capture_moves(board, 4, 3), [])
+
+    def test_blk_man_cannot_capture_backward(self):
+        # BLK man at (4,3) moving down; (3,2) would be a backward capture
+        # landing on (2,1).
+        board = make_board()
+        place(board, 4, 3, BLK)
+        place(board, 3, 2, RED)
+
+        self.assertEqual(capture_moves(board, 4, 3), [])
+
+    def test_red_man_can_still_capture_forward(self):
+        board = make_board()
+        place(board, 4, 3, RED)
+        place(board, 3, 2, BLK)
+
+        moves = capture_moves(board, 4, 3)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0]['to'], (2, 1))
+        self.assertEqual(moves[0]['captured'], [(3, 2)])
+
+    def test_blk_man_can_still_capture_forward(self):
+        board = make_board()
+        place(board, 4, 3, BLK)
+        place(board, 5, 2, RED)
+
+        moves = capture_moves(board, 4, 3)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0]['to'], (6, 1))
+        self.assertEqual(moves[0]['captured'], [(5, 2)])
+
+    def test_king_can_capture_backward(self):
+        board = make_board()
+        place(board, 4, 3, RED, KING)
+        place(board, 5, 2, BLK)
+
+        moves = capture_moves(board, 4, 3)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0]['to'], (6, 1))
+        self.assertEqual(moves[0]['captured'], [(5, 2)])
+
+    def test_king_can_capture_forward(self):
+        board = make_board()
+        place(board, 4, 3, RED, KING)
+        place(board, 3, 2, BLK)
+
+        moves = capture_moves(board, 4, 3)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0]['to'], (2, 1))
+
+    def test_man_multi_jump_chain_still_works(self):
+        # A forward-only chain must still be generated in full.
+        board = make_board()
+        place(board, 5, 0, RED)
+        place(board, 4, 1, BLK)
+        place(board, 2, 3, BLK)
+
+        moves = capture_moves(board, 5, 0)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0]['from'], (5, 0))
+        self.assertEqual(moves[0]['to'], (1, 4))
+        self.assertEqual(moves[0]['captured'], [(4, 1), (2, 3)])
+
+    def test_man_cannot_jump_over_own_piece(self):
+        board = make_board()
+        place(board, 4, 3, RED)
+        place(board, 3, 2, RED)
+
+        self.assertEqual(capture_moves(board, 4, 3), [])
+
+
+class TestCheckersPromotionDuringCapture(unittest.TestCase):
+    """A man reaching the king row mid-chain is crowned and the chain ends."""
+
+    def test_man_capturing_onto_king_row_is_promoted(self):
+        # RED man at (2,1) jumps the BLK piece at (1,2), landing on (0,3),
+        # which is the RED promotion row.
+        board = make_board()
+        place(board, 2, 1, RED)
+        place(board, 1, 2, BLK)
+
+        moves = capture_moves(board, 2, 1)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0]['to'], (0, 3))
+        self.assertEqual(moves[0]['captured'], [(1, 2)])
+        self.assertTrue(moves[0]['promotes'])
+
+    def test_promoting_capture_actually_crowns_the_piece(self):
+        board = make_board()
+        place(board, 2, 1, RED)
+        place(board, 1, 2, BLK)
+
+        moves = capture_moves(board, 2, 1)
+        nb = apply_move(board, moves[0])
+
+        landed = piece_at(nb, 0, 3)
+        self.assertIsNotNone(landed)
+        self.assertEqual(landed['color'], RED)
+        self.assertEqual(landed['type'], KING)
+        self.assertIsNone(piece_at(nb, 2, 1))
+        self.assertIsNone(piece_at(nb, 1, 2))
+
+    def test_capture_chain_terminates_on_king_row(self):
+        # (1,4) is reachable only by a king jumping backward out of (0,3).
+        # A man must NOT continue the sequence past the promotion row, so no
+        # move ending on (2,5) may be generated.
+        board = make_board()
+        place(board, 2, 1, RED)
+        place(board, 1, 2, BLK)
+        place(board, 1, 4, BLK)
+
+        moves = capture_moves(board, 2, 1)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0]['to'], (0, 3))
+        self.assertTrue(moves[0]['promotes'])
+        self.assertFalse(any(m['to'] == (2, 5) for m in moves))
+
+    def test_king_row_capture_only_counts_pieces_jumped_before_promotion(self):
+        board = make_board()
+        place(board, 2, 1, RED)
+        place(board, 1, 2, BLK)
+        place(board, 1, 4, BLK)
+
+        moves = capture_moves(board, 2, 1)
+        self.assertEqual(moves[0]['captured'], [(1, 2)])
+
+    def test_man_chain_not_reaching_king_row_stays_a_man(self):
+        board = make_board()
+        place(board, 5, 2, RED)
+        place(board, 4, 3, BLK)
+        place(board, 2, 5, BLK)
+
+        moves = capture_moves(board, 5, 2)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0]['to'], (1, 6))
+        self.assertFalse(moves[0]['promotes'])
+
+        nb = apply_move(board, moves[0])
+        self.assertEqual(piece_at(nb, 1, 6)['type'], MAN)
+
+    def test_normal_move_promotion_still_works(self):
+        board = make_board()
+        place(board, 1, 4, RED)
+
+        moves = normal_moves(board, 1, 4)
+        self.assertEqual(len(moves), 2)
+        self.assertTrue(all(m['promotes'] for m in moves))
+
+        nb = apply_move(board, moves[0])
+        self.assertEqual(piece_at(nb, moves[0]['to'][0], moves[0]['to'][1])['type'], KING)
+
+    def test_normal_move_before_king_row_does_not_promote(self):
+        board = make_board()
+        place(board, 3, 4, RED)
+
+        moves = normal_moves(board, 3, 4)
+        self.assertTrue(moves)
+        self.assertFalse(any(m['promotes'] for m in moves))
+
+        nb = apply_move(board, moves[0])
+        self.assertEqual(piece_at(nb, moves[0]['to'][0], moves[0]['to'][1])['type'], MAN)
 
 
 if __name__ == '__main__':

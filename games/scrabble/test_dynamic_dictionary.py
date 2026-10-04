@@ -33,11 +33,21 @@ class TestDynamicDictionary(unittest.TestCase):
         self.assertTrue(new_dict.is_valid_word("OLOSGAMING"))
 
     def test_online_dynamic_lookup_and_auto_caching(self):
-        # "SELFIE" is a modern word
+        # Stub the external lookup so this test never depends on a live HTTP API.
+        # The behaviour under test is: an online-confirmed word is auto-cached
+        # into the custom words file for future offline play.
+        self.dict._online_lookup = lambda word: "A self-portrait, usually with a filter."
+
+        # "SELFIE" is a modern word, absent from the bundled base dictionary
+        self.assertFalse(self.dict.is_valid_word("SELFIE", allow_online_lookup=False))
+
         valid = self.dict.is_valid_word("SELFIE", allow_online_lookup=True)
         self.assertTrue(valid)
         # Should be auto-added to custom_words file for future offline use
         self.assertTrue(os.path.exists(self.custom_path))
+
+        # The cached word is now accepted offline, with no lookup needed
+        self.assertTrue(self.dict.is_valid_word("SELFIE", allow_online_lookup=False))
 
 if __name__ == "__main__":
     unittest.main()

@@ -108,8 +108,13 @@ def _move_dirs(piece):
     return [(-1, -1), (-1, 1)] if piece['color'] == RED else [(1, -1), (1, 1)]
 
 
-def _jump_dirs(_piece):
-    return [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+def _jump_dirs(piece):
+    """Capture directions for a piece.
+
+    Captures use the same directional set as movement: kings capture in all
+    four diagonal directions, men capture only forward.
+    """
+    return _move_dirs(piece)
 
 
 def _will_promote(piece, r):
@@ -155,6 +160,13 @@ def _explore_captures(board, r, c, piece, captured_so_far, origin=None):
                 and (jr, jc) not in captured_so_far):
             found = True
             new_cap = captured_so_far + [(jr, jc)]
+            if _will_promote(piece, lr):
+                # A man reaching the king row is crowned immediately and the
+                # capture sequence ends there (American/English rules).
+                results.append({'from': origin, 'to': (lr, lc),
+                                'captured': new_cap, 'is_capture': True,
+                                'promotes': True})
+                continue
             sub = _explore_captures(board, lr, lc, piece, new_cap, origin)
             if sub:
                 results.extend(sub)

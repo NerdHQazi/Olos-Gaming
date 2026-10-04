@@ -297,7 +297,7 @@ class MoveValidator:
 
         for pos_list in words_to_score:
             word_str = "".join([board.get_tile(r, c).get_char() for r, c in pos_list])
-            if not dictionary.is_valid_word(word_str):
+            if not dictionary.is_valid_word(word_str, allow_online_lookup=False):
                 return False, f"Invalid word: '{word_str}'", [], 0
             
             # Score word

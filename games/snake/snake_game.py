@@ -54,8 +54,10 @@ class Snake:
         x, y = self.direction
         new_head = (current_head[0] + x, current_head[1] + y)
         
-        # Check if snake hits itself
-        if new_head in self.positions[1:]:
+        # Check if snake hits itself. The tail vacates its cell this frame
+        # unless the snake is growing, so only exclude it when it moves away.
+        body = self.positions[1:] if self.grow_pending else self.positions[1:-1]
+        if new_head in body:
             return False
         
         # Check if snake hits wall
