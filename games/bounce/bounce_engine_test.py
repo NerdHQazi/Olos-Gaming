@@ -243,6 +243,69 @@ class TestPlayerGravityAndLanding(unittest.TestCase):
         self.assertLess(weak.pos.y, self.player.pos.y)
 
 
+class TestPlayerRunSpeed(unittest.TestCase):
+    """Requirements: holding a direction must not accelerate without bound."""
+
+    def setUp(self):
+        self.platforms = pygame.sprite.Group()
+        self.platforms.add(platform())
+
+    def test_holding_right_never_exceeds_max_run_speed(self):
+        p = Player(self.platforms, pos=(200, 380))
+        with key_held(pygame.K_RIGHT):
+            for _ in range(600):
+                p.update()
+                self.assertLessEqual(p.vel.x, engine.MAX_RUN_SPEED)
+        self.assertAlmostEqual(p.vel.x, engine.MAX_RUN_SPEED, places=5)
+
+    def test_holding_left_never_goes_below_max_run_speed(self):
+        p = Player(self.platforms, pos=(200, 380))
+        with key_held(pygame.K_LEFT):
+            for _ in range(600):
+                p.update()
+                self.assertGreaterEqual(p.vel.x, -engine.MAX_RUN_SPEED)
+        self.assertAlmostEqual(p.vel.x, -engine.MAX_RUN_SPEED, places=5)
+
+    def test_run_speed_is_capped_before_the_player_can_leave_the_world(self):
+        p = Player(self.platforms, pos=(200, 380))
+        with key_held(pygame.K_RIGHT):
+            for _ in range(600):
+                p.update()
+        # 10 s of held input at the cap stays near the level instead of
+        # rocketing far outside it, which is what an uncapped velocity did.
+        self.assertLess(p.pos.x, WIDTH * 100)
+
+    def test_sustained_input_settles_at_the_cap_and_reverses_symmetrically(self):
+        right = Player(self.platforms, pos=(200, 380))
+        left = Player(self.platforms, pos=(200, 380))
+        with key_held(pygame.K_RIGHT):
+            for _ in range(120):
+                right.update()
+        with key_held(pygame.K_LEFT):
+            for _ in range(240):
+                left.update()
+        self.assertAlmostEqual(right.vel.x, -left.vel.x, places=5)
+        self.assertAlmostEqual(abs(right.vel.x), engine.MAX_RUN_SPEED, places=5)
+
+    def test_short_taps_are_unchanged_by_the_cap(self):
+        # Below the cap the acceleration must be untouched, so a brief tap
+        # still produces exactly MOVE_ACCEL * FIXED_DT on the first frame.
+        p = Player(self.platforms, pos=(200, 380))
+        with key_held(pygame.K_RIGHT):
+            p.update()
+        self.assertAlmostEqual(p.vel.x, engine.MOVE_ACCEL * FIXED_DT, places=5)
+
+    def test_friction_still_brings_the_player_to_rest(self):
+        p = Player(self.platforms, pos=(200, 380))
+        with key_held(pygame.K_RIGHT):
+            for _ in range(60):
+                p.update()
+        with no_keys_pressed():
+            for _ in range(600):
+                p.update()
+        self.assertEqual(p.vel.x, 0.0)
+
+
 class TestPlayerJumping(unittest.TestCase):
     """Requirements: jump when grounded, not when airborne, no held-key repeat."""
 

@@ -21,6 +21,11 @@ JUMP_SPEED = 900.0
 MOVE_ACCEL = 1800.0
 GROUND_FRICTION = 0.85
 MAX_FALL_SPEED = 900.0
+# Top horizontal run speed. Without a cap, holding a direction accelerates
+# without bound at MOVE_ACCEL and the player leaves the 400 px world in well
+# under a second. 320 px/s clears the 370 px of open floor in ~1.15 s and
+# covers ~320 px per jump against a 225 px jump height.
+MAX_RUN_SPEED = 320.0
 
 # One physics step. `update()` defaults to this so a plain
 # `pygame.sprite.Group.update()` still advances the player correctly.
@@ -136,6 +141,10 @@ class Player(pygame.sprite.Sprite):
             self.vel.x *= self.friction
             if abs(self.vel.x) < 1.0:
                 self.vel.x = 0.0
+
+        # Clamp the run speed so holding a direction cannot accelerate without
+        # bound and carry the player off the world.
+        self.vel.x = max(-MAX_RUN_SPEED, min(MAX_RUN_SPEED, self.vel.x))
 
     def _overlaps_x(self, other):
         return self.rect.left < other.right and self.rect.right > other.left
@@ -394,6 +403,9 @@ def build_demo_level():
     ledges = [
         platform(pygame.Rect(110, 330, 110, 16)),
         platform(pygame.Rect(250, 250, 110, 16)),
+        platform(pygame.Rect(20, 180, 150, 16)),
+        platform(pygame.Rect(200, 110, 150, 16)),
+        platform(pygame.Rect(40, 45, 150, 16)),
     ]
 
     platforms = pygame.sprite.Group()
