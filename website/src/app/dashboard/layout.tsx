@@ -19,7 +19,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { RiCoinsFill } from "react-icons/ri";
+import { RiCoinsFill } from "react-[#20ceee]";
 import { FaEthereum } from "react-icons/fa";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { useAppKitAccount } from "@reown/appkit/react";
@@ -33,17 +33,66 @@ type DashboardLayoutProps = {
 };
 
 const navigation = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Game", href: "/dashboard/games", icon: Gamepad2, active: true },
-  { label: "Guild Hub", href: "/dashboard/guild-hub", icon: Club, active: true },
-  { label: "Leaderboard", href: "/dashboard/leaderboard", icon: Trophy, color: "gold" },
-  { label: "Tournaments", href: "/dashboard/tournaments", icon: Trophy, color: "gold" },
-  { label: "Token", href: "/dashboard/token", icon: RiCoinsFill },
-  { label: "Wallet", href: "/dashboard/wallet", icon: Wallet },
-  { label: "Marketplace", href: "/dashboard/marketplace", icon: Store },
-  { label: "Profile", href: "/dashboard/profile", icon: UserRound },
-  { label: "How it works", href: "/how-it-works", icon: CircleHelp, color: "red" },
-  { label: "Support", href: "/support", icon: CircleHelp },
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    label: "Game",
+    href: "/dashboard/games",
+    icon: Gamepad2,
+    active: true,
+  },
+  {
+    label: "Guild Hub",
+    href: "/dashboard/guild-hub",
+    icon: Club,
+    active: true,
+  },
+  {
+    label: "Leaderboard",
+    href: "/dashboard/leaderboard",
+    icon: Trophy,
+    color: "gold",
+  },
+  {
+    label: "Tournaments",
+    href: "/dashboard/tournaments",
+    icon: Trophy,
+    color: "gold",
+  },
+  {
+    label: "NFTs",
+    href: "/dashboard/token",
+    icon: RiCoinsFill,
+  },
+  {
+    label: "Wallet",
+    href: "/dashboard/wallet",
+    icon: Wallet,
+  },
+  {
+    label: "Marketplace",
+    href: "/dashboard/marketplace",
+    icon: Store,
+  },
+  {
+    label: "Profile",
+    href: "/dashboard/profile",
+    icon: UserRound,
+  },
+  {
+    label: "How it works",
+    href: "/how-it-works",
+    icon: CircleHelp,
+    color: "red",
+  },
+  {
+    label: "Support",
+    href: "/support",
+    icon: CircleHelp,
+  },
 ];
 
 const GVT_ADDRESS = "0xDE0Bd309CbCaf5E6fBc7e05660E7BCb83520C3fC";
@@ -123,15 +172,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const displayUSD = `≈ $${(parseFloat(rawBalance) * 0.25).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
   const isLoadingBal = isConnected ? isFetchingChain : walletLoading;
 
+  const isActive = (pathname: string, href: string) => {
+    const current = pathname.toLowerCase();
+    const target = href.toLowerCase();
+
+    // Root links like "/" or "/dashboard" shouldn't match everything
+    if (target === "/") return current === "/";
+
+    return current === target || current.startsWith(`${target}/`);
+  };
+
   return (
-    <div className="max-h-screen h-screen bg-[#03060d] text-white">
-      <div className="flex max-h-screen">
+    <div className="max-h-screen bg-[#03060d] text-white overflow-hidden">
+      <div className="flex">
         <aside
-          className={`fixed h-full overflow-auto inset-y-0 left-0 z-50 flex w-[220px] flex-col border-r border-[#18203b] bg-[#080d1c] transition-transform duration-300 lg:static lg:translate-x-0 ${
+          className={`fixed h-full overflow-auto inset-y-0 left-0 z-50 flex w-55 flex-col border-r border-[#18203b] bg-[#080d1c] transition-transform duration-300 lg:static lg:translate-x-0 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="flex h-[68px] items-center justify-between border-b border-[#151d35] px-5">
+          <div className="flex h-17 items-center justify-between border-b border-[#151d35] px-5">
             <a href="/dashboard" className="flex items-center gap-2">
               <div className="relative">
                 <Image
@@ -158,14 +217,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <nav className="space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
+                const activeHref = navigation
+                  .map((item) => item.href)
+                  .filter((href) => isActive(pathname, href))
+                  .sort((a, b) => b.length - a.length)[0];
+                const active = item.href === activeHref;
 
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
                     onClick={() => setSidebarOpen(false)}
-                    className={`group flex h-9 items-center gap-3 rounded-[12px] px-3 text-[14px] font-medium transition ${
-                      pathname.toLowerCase() === item.href.toLowerCase()
+                    className={`group flex h-9 items-center gap-3 rounded-xl px-3 text-[14px] font-medium transition ${
+                      active
                         ? "bg-[#341266] text-white shadow-[inset_0_0_0_1px_rgba(112,52,215,0.35)] border border-[#7135DB]"
                         : "text-[#A4B7EB] hover:bg-[#11182c] hover:text-white"
                     }`}
@@ -198,12 +262,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   width={1000}
                   height={1000}
                   quality={100}
-                  className="w-full h-[70px] my-4 rounded-[6px]"
+                  className="w-full h-17.5 my-4 rounded-md"
                 />
 
                 <button
                   type="button"
-                  className="flex h-[27px] w-full items-center justify-center rounded-[8px] bg-[#7135DB] text-[12px] font-bold text-white transition hover:bg-[#8449e8]"
+                  className="flex h-6.75 w-full items-center justify-center rounded-lg bg-[#7135DB] text-[12px] font-bold text-white transition hover:bg-[#8449e8]"
                 >
                   GET LINK
                 </button>
@@ -232,7 +296,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 h-[68px] border-b border-[#151d35] bg-[#060a14]/95 backdrop-blur">
+          <header className="sticky top-0 z-30 h-17 border-b border-[#151d35] bg-[#060a14]/95 backdrop-blur">
             <div className="flex h-full items-center justify-between gap-3 px-4 sm:px-6 lg:px-7">
               <div className="flex min-w-0 items-center gap-3">
                 <button
@@ -248,7 +312,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   type="button"
-                  className="hidden items-center gap-2 rounded-md rounded-[8px] bg-[#1A0A3C33] border border-[#2A1060] px-3 text-[14px] font-medium text-[#fff] sm:flex"
+                  className="hidden items-center gap-2 rounded-md bg-[#1A0A3C33] border border-[#2A1060] px-3 text-[14px] font-medium text-white sm:flex"
                 >
                   <FaEthereum />
                   Ethereum
@@ -285,7 +349,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 bg-[#03060d] overflow-auto">
+          <main className="min-w-0 max-h-screen pb-20 flex-1 bg-[#03060d] overflow-auto">
             <div className="mx-auto w-full max-w-300">{children}</div>
           </main>
         </div>
