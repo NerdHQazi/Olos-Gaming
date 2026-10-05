@@ -5,14 +5,10 @@ import AuthPageShell from '@/components/auth/AuthPageShell';
 import AuthCard from '@/components/auth/AuthCard';
 
 function CompassIcon() {
-  // Gradient ring (purple -> cyan) via padding trick: outer div carries the
-  // gradient as its background, inner div is the dark fill, leaving a thin
-  // gradient "border" showing through.
   return (
     <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#7135DB] to-[#22D3EE] p-[1.5px]">
       <div className="w-full h-full rounded-full bg-[#0B1121] flex items-center justify-center">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="#22D3EE">
-          <path d="M12 2l7 4v6l-7 10-7-10V6l7-4z" opacity="0" />
           <path d="M19 5L5 11l6.2 2.2L13.6 19 19 5z" />
         </svg>
       </div>
@@ -30,9 +26,7 @@ function AuthenticatorIcon() {
   );
 }
 function SmsIcon() {
-  return (
-    <div className="w-10 h-10 rounded-lg bg-[#22D3EE]" />
-  );
+  return <div className="w-10 h-10 rounded-lg bg-[#22D3EE]" />;
 }
 
 type Method = 'authenticator' | 'sms';
@@ -42,16 +36,15 @@ export default function Enable2FAPage() {
   const [selected, setSelected] = useState<Method | null>(null);
 
   // NOTE: your backend (authController.js) has no 2FA enrollment endpoint yet —
-  // there's nothing to call here. This just records the choice locally and
-  // continues to /wallet (same destination as a plain signin) so onboarding
-  // isn't blocked on backend work that doesn't exist. When a real endpoint
-  // exists, wire handleContinue to call it here.
+  // nothing to call here. Records the choice locally and continues to
+  // /dashboard (same destination signin uses now) so onboarding isn't
+  // blocked on backend work that doesn't exist.
   const handleContinue = () => {
     if (!selected) return;
     if (typeof window !== 'undefined') {
       localStorage.setItem('olos_2fa_preference', selected);
     }
-    router.push('/wallet');
+    router.push('/dashboard');
   };
 
   return (
@@ -113,7 +106,7 @@ export default function Enable2FAPage() {
             </button>
             <button
               type="button"
-              onClick={() => router.push('/wallet')}
+              onClick={() => router.push('/dashboard')}
               className="text-xs font-bold tracking-wide text-gray-500 hover:text-gray-300"
             >
               MAYBE LATER
