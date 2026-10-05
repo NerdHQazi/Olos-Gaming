@@ -6,6 +6,7 @@ import { MessageCircle, Swords, SwordsIcon, ChevronDown } from "lucide-react";
 import type { Guild, GuildMember, ChatMessage, UpcomingBattle, ActiveWar, GuildWarBattle, BattleHistoryEntry, IncomeBreakdownItem,
   TreasuryTransaction, } from '../../guildHub.mock'
 import BackButton from '@/app/dashboard/marketplace/[id]/back-button';
+import Link from 'next/link';
 
 const TABS = ["Roster", "Guild Wars", "Treasury", "Settings"] as const;
 type Tab = (typeof TABS)[number];
@@ -57,9 +58,9 @@ export default function GuildProfilePage({
                 {guild.name}
                 {guild.shortName ? ` [${guild.shortName}]` : ""}
               </h1>
-              <span className="text-[9px] px-2.5 py-1 rounded-full bg-[#20CEEE]/15 text-[#20CEEE] inter-bold whitespace-nowrap">
+              <Link href={`/dashboard/leaderboard`} className="text-[9px] px-2.5 py-1 rounded-full bg-[#20CEEE]/15 text-[#20CEEE] inter-bold whitespace-nowrap">
                 RANK #{guild.globalRank} GLOBAL
-              </span>
+              </Link>
             </div>
             {guild.tagline && <p className="text-[12px] text-[#A4B7EB]">{guild.tagline}</p>}
           </div>
