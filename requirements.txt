@@ -1,0 +1,15 @@
+# Runtime dependencies for the Python games in games/.
+#   pygame       - every game (bounce, checkers, chess, scrabble, snake, tetris, tilemap)
+#   numpy        - games/lib/tilemap/tilemap.py (imported unconditionally at module level)
+#   python-chess - games/chess/ only
+#
+# Optional, NOT installed by default:
+#   nltk         - games/scrabble/dictionary.py uses it as a try/except WordNet fallback
+#                  for definitions; the game and its test suite run without it.
+#
+# games/chess/requirements.txt additionally lists fastapi / uvicorn /
+# python-socketio for the external backend infrastructure; the standalone
+# Pygame chess game does not need them.
+pygame
+numpy
+python-chess

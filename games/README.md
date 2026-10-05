@@ -14,6 +14,7 @@ The `games/` directory serves as the core playground for playable games and game
 
 * **Python 3.x**: Primary programming language used across all games.
 * **Pygame / `pygame-ce`**: Core multimedia library used for window creation, event loop handling, 2D sprite/shape rendering, and audio sound synthesis.
+* **NumPy**: Used by the tilemap engine (`games/lib/tilemap/tilemap.py`) to hold and populate the tile-index grid. It is imported at module level, so it is required at runtime, not just for tests.
 * **python-chess**: Pure Python chess library used by the Chess engine (`games/chess/`) for rule validation, board state representation, move generation, and checkmate/stalemate detection.
 * **Python Standard Library**: Standard modules used across games, including `csv` (for tilemap parsing), `unittest` (for Scrabble test suite), `random`, `json`, `urllib`, `copy`, `sys`, and `os`.
 
@@ -46,10 +47,12 @@ source venv/bin/activate
 Install the required core game dependencies:
 
 ```bash
-pip install pygame python-chess
+pip install -r requirements.txt
 ```
 
-Or install using the requirements file in the chess directory:
+Which installs `pygame`, `numpy`, and `python-chess` — exactly what the games in
+this directory import. The chess directory also has its own requirements file
+for the external backend infrastructure:
 
 ```bash
 pip install -r games/chess/requirements.txt
@@ -65,8 +68,17 @@ Below is the actual directory structure of the `games/` directory:
 games/
 ├── .gitignore
 ├── README.md
+├── assets/
+│   ├── Desert_ObjectTile.csv
+│   ├── Desert_Platform.csv
+│   └── tmw_desert_spacing.webp
+├── bounce/
+│   ├── bounce_engine_test.py
+│   └── bounce_test.py
 ├── checkers/
-│   └── checkers_game.py
+│   ├── checkers_game.py
+│   ├── checkers_test.py
+│   └── checkers_prototypes/
 ├── chess/
 │   ├── README.md
 │   ├── ai.py
@@ -74,6 +86,14 @@ games/
 │   ├── main.py
 │   ├── renderer.py
 │   └── requirements.txt
+├── lib/
+│   ├── bounce_engine.py
+│   ├── bounce_engine_old.py
+│   └── tilemap/
+│       ├── csv_loader.py
+│       ├── main.py
+│       ├── map.csv
+│       └── tilemap.py
 ├── scrabble/
 │   ├── GameBasics.py
 │   ├── README.md
@@ -87,24 +107,22 @@ games/
 │   └── test_simulated_gameplay.py
 ├── snake/
 │   ├── README.md
-│   └── snake_game.py
-├── tetris/
-│   └── tetris.py
-└── tilemap/
-    ├── csv_loader.py
-    ├── main.py
-    ├── map.csv
-    └── tilemap.py
+│   ├── snake_game.py
+│   └── snake_test.py
+└── tetris/
+    └── tetris.py
 ```
 
 ### Folder Explanations
 
-* `checkers/`: Single-file implementation of standard 8x8 Draughts / Checkers.
+* `assets/`: Shared tileset image and CSV map data used by the platformer and tilemap engines.
+* `bounce/`: Platformer project folder — test harnesses for the engine in `lib/bounce_engine.py`.
+* `checkers/`: Single-file implementation of standard 8x8 Draughts / Checkers, plus a `unittest` suite and third-party prototype drafts.
 * `chess/`: Modular Pygame Chess implementation with `python-chess` backend integration and a heuristic computer opponent.
+* `lib/`: Shared engines used by the game entry points: the 2D platformer (`bounce_engine.py`) and the tilemap (`tilemap/`).
 * `scrabble/`: Complete 15x15 Scrabble game engine, UI components, local ENABLE1 dictionary, dynamic API lookup, and `unittest` test suite.
-* `snake/`: Grid-based Snake game with food spawning, progressive speed scaling, and synthetic sound effects.
+* `snake/`: Grid-based Snake game with food spawning, progressive speed scaling, and synthetic sound effects, plus a `unittest` suite.
 * `tetris/`: Classic Tetris piece rotation, collision detection, soft/hard drop, line clearing, and score tracking.
-* `tilemap/`: Utility engine demonstrating how to parse 2D CSV map files (`map.csv`) and render tilemaps.
 
 ---
 
@@ -160,14 +178,21 @@ games/
   python games/tetris/tetris.py
   ```
 
-### 6. Tilemap CSV Demonstration
-* **Description**: Utility engine showing how to parse external CSV grid files and blit corresponding tile surfaces.
+### 6. Platformer ("Olos Platformer")
+* **Description**: Core 2D platformer engine and demo level (`games/lib/bounce_engine.py`). Movement, gravity, jumping, solid-platform collision, and projectile/enemy entities.
+* **Scope**: This is the engine/demo only (development phases 1–3). It deliberately has **no** health, lives, respawn, score, checkpoints, world progression, or win/lose state — those are future scope, not missing features.
+* **Entry Point**: `python games/lib/bounce_engine.py`
+* **Technologies**: Python, Pygame
+* **Tests**: `python games/bounce/bounce_engine_test.py`
+
+### 7. Tilemap CSV Demonstration
+* **Description**: Utility engine showing how to parse external CSV grid files and blit corresponding tile surfaces. Also provides the `Tileset` / `imageTileMap` tileset-image loader.
 * **Features**: Modular `TileMap` class (`tilemap.py`), CSV file parser (`csv_loader.py`), sample 10x5 map layout (`map.csv`), fallback handling for unknown tile IDs.
-* **Entry Point**: `games/tilemap/main.py`
-* **Technologies**: Python, Pygame, Standard `csv` library
+* **Entry Point**: `games/lib/tilemap/main.py`
+* **Technologies**: Python, Pygame, NumPy, Standard `csv` library
 * **Run Command**:
   ```bash
-  python games/tilemap/main.py
+  python games/lib/tilemap/main.py
   ```
 
 ---
@@ -188,7 +213,7 @@ games/
    ```
 3. Install dependencies:
    ```bash
-   pip install pygame python-chess
+   pip install -r requirements.txt
    ```
 
 ---
@@ -213,8 +238,11 @@ python games/snake/snake_game.py
 # Tetris
 python games/tetris/tetris.py
 
+# Platformer
+python games/lib/bounce_engine.py
+
 # Tilemap Demo
-python games/tilemap/main.py
+python games/lib/tilemap/main.py
 ```
 
 Alternatively, navigate into the specific game directory first:
@@ -255,18 +283,29 @@ To add a new game to the `games/` directory:
 
 ## 10. Testing
 
-### Automated Unit Tests (`games/scrabble/`)
-The Scrabble implementation includes an automated test suite built using Python's standard `unittest` framework:
+### Automated `unittest` Suites
 
-* `test_engine.py`: 12 unit tests covering tile bag distribution (100 tiles), rack refilling, center tile requirement, move validation, word multipliers, bingo bonus (50 pts), blank tile mechanics, turn passing, and end-game score calculation.
+The following suites exist and run headless (no display required):
 
-To run the offline engine unit tests:
+| Suite | Command | Covers |
+|---|---|---|
+| Platformer engine | `python games/bounce/bounce_engine_test.py` | Player physics, jumping, solid-platform and head-bump collision, timestep/frame-rate independence, `Projectile`, `Enemy`, `World`, `GameClock`, `main()` entry point |
+| Platformer bootstrap | `python games/bounce/bounce_test.py` | Imports the engine and tilemap modules and loads the shared desert tileset |
+| Checkers | `python games/checkers/checkers_test.py` | Board rules, mandatory captures, multi-jump, king promotion, 50-move draw |
+| Snake | `python games/snake/snake_test.py` | Grid movement, growth, food spawning, collision detection |
+| Scrabble | `python games/scrabble/test_engine.py` | Tile bag distribution (100 tiles), rack refilling, center tile requirement, move validation, word multipliers, bingo bonus (50 pts), blank tile mechanics, turn passing, end-game scoring |
+
+*Note: Additional Scrabble test files (`test_dynamic_dictionary.py`, `test_interactive_user_scenarios.py`, `test_simulated_gameplay.py`) exercise dictionary API calls and interactive UI flows.*
+
+### Tilemap
+
+There is no dedicated `unittest` file for the tilemap engine. It is verified by
+importing it and running the entry point:
 
 ```bash
-python games/scrabble/test_engine.py
+python games/lib/tilemap/main.py
 ```
 
-*Note: Additional test files in Scrabble (`test_dynamic_dictionary.py`, `test_interactive_user_scenarios.py`, `test_simulated_gameplay.py`) test dictionary API calls and interactive UI flows.*
-
 ### Manual Testing
-For `checkers`, `chess`, `snake`, `tetris`, and `tilemap`, formal automated unit test suites are currently not implemented. Testing for these games is conducted manually by launching the respective entry point and verifying visual rendering, controls, and game logic rules.
+
+For `chess` and `tetris`, formal automated unit test suites are currently not implemented. Testing for these games is conducted manually by launching the respective entry point and verifying visual rendering, controls, and game logic rules.
