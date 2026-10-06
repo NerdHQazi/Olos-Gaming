@@ -1,5 +1,6 @@
 # Runtime dependencies for the Python games in games/.
-#   pygame       - every game (bounce, checkers, chess, scrabble, snake, tetris, tilemap)
+#   pygame-ce    - every game (bounce, checkers, chess, scrabble, snake, tetris, tilemap)
+#                   (pygame-ce provides the `pygame` module, incl. WebP image support)
 #   numpy        - games/lib/tilemap/tilemap.py (imported unconditionally at module level)
 #   python-chess - games/chess/ only
 #
@@ -10,6 +11,6 @@
 # games/chess/requirements.txt additionally lists fastapi / uvicorn /
 # python-socketio for the external backend infrastructure; the standalone
 # Pygame chess game does not need them.
-pygame
+pygame-ce
 numpy
 python-chess

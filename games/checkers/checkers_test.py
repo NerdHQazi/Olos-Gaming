@@ -5,7 +5,14 @@ Run with:
 """
 
 import os
+import sys
 import unittest
+
+# Make this script's directory importable so the test module works from
+# direct execution and under standard `python -m unittest` invocation.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
 
 os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
 os.environ.setdefault('SDL_AUDIODRIVER', 'dummy')

@@ -23,6 +23,7 @@ def createImageSurface(width,height):
     Helper function to create an image surface
     """
     surface = pygame.Surface((width,height))
+    return surface
     
 
 def main():
