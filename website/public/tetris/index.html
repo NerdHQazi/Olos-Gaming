@@ -1,0 +1,529 @@
+<html lang="en-us"><script src="https://pygame-web.github.io/cdn/0.9.3/pythons.js" type=module id="site" data-python="python3.12" data-LINES=42 data-COLUMNS=132 data-os="vtx,snd,gui" async defer>#<!--
+
+print("""
+Loading build_src from build_src.apk
+    Pygbag Version : 0.9.3
+    Template Version : 0.9.3
+    Python  : 3.12
+    CDN URL : https://pygame-web.github.io/cdn/0.9.3/
+    Screen  : 400x800
+    Title   : build_src
+    Folder  : build_src
+    Authors : pgw
+    SPDX-License-Identifier: cookiecutter.spdx
+
+""")
+
+import sys
+import asyncio
+import platform
+import json
+from pathlib import Path
+
+# do not rename
+async def custom_site():
+    import embed
+    platform.document.body.style.background = "#04070f"
+
+    platform.window.transfer.hidden = true
+    platform.window.canvas.style.visibility = "visible"
+
+
+    bundle = "build_src"
+
+    # the C or js loader could do that but be explicit.
+    appdir = Path(f"/data/data/{bundle}") # /data/data/build_src
+    appdir.mkdir()
+
+
+    # unpack filesystem from compressed archive into work dir
+    if platform.window.location.host.find('.itch.zone')>0:
+        import zipfile
+        async with platform.fopen("build_src.apk", "rb") as archive:
+            with zipfile.ZipFile(archive) as zip_ref:
+                zip_ref.extractall(appdir.as_posix())
+    else:
+        import tarfile
+        async with platform.fopen("build_src.tar.gz", "rb") as archive:
+            tar = tarfile.open(fileobj=archive, mode="r:gz")
+            tar.extractall(path=appdir.as_posix(), filter='tar')
+            tar.close()
+
+    # preloader will change to work dir and prepend it to sys.path
+    platform.run_main(PyConfig, loaderhome= appdir / "assets", loadermain=None)
+
+
+    # wait preloading complete : that includes images and wasm compilation of bundled modules
+    while embed.counter()<0:
+        await asyncio.sleep(.1)
+
+    main = appdir / "assets" / "main.py"
+
+    # TODO: test for window.webkitAudioContext and block aio loop until gesture if accessing media manager play
+    # before a gesture is recorded ( touch or click )
+
+    # test/wait user media interaction
+    if not platform.window.MM.UME:
+
+        # now that apk is mounted we have access to font cache
+        # but we need to fill __file__ that is not yet set
+        __import__(__name__).__file__ = main
+
+        # now make a prompt
+        msg  = "Ready to start ! Please click/touch page"
+        platform.window.infobox.innerText = msg
+        print("\n"*4, f"    * Waiting for media user engagement. {msg} *" , "\n"*4)
+
+        while not platform.window.MM.UME:
+            await asyncio.sleep(.1)
+
+    # start async top level machinery if not started and add a console in any case if requested.
+    await TopLevel_async_handler.start_toplevel(platform.shell, console=window.python.config.debug)
+
+    # now that apk is mounted we have access to font cache
+    # but we need to fill __file__/__name__ that are not yet set
+    __import__(__name__).__file__ = main
+
+
+    def ui_callback(pkg):
+        platform.window.infobox.innerText = f"installing {pkg}"
+
+    await shell.source(main, callback=ui_callback)
+
+    # if you don't reach that step
+    # your main.py has an infinite sync loop somewhere !
+
+    platform.window.infobox.style.display = "none"
+    platform.window.config.gui_divider = 1
+    platform.window.window_resize()
+    print("default.tmpl: done")
+
+    shell.interactive()
+
+asyncio.run( custom_site() )
+
+
+
+
+
+
+
+
+
+
+
+
+# BEGIN BLOCK
+#
+# now this is the html part you can (and should) customize
+# It is not mandatory : pygame-script when it reads the first line (also called
+# shebang ) of above code create absolute minimal widget set
+# required for running with default rules
+#
+# do not alter that comment block it is separating python code from html code
+# =============================================================================
+# --></script><head><!--
+//=============================================================================
+//
+//
+//
+//
+//
+//
+//
+
+    {%- if cookiecutter.comment != "" -%}
+{{cookiecutter.comment}}
+    {% endif %}
+
+--><script type="application/javascript">
+// END BLOCK
+
+
+
+// this dict is available under PyConfig.config from __main__
+
+config = {
+    xtermjs : "1" ,
+    _sdl2 : "canvas",
+    user_canvas : 0,
+    user_canvas_managed : 0,
+    gui_divider : 2,
+    ume_block : 1,
+    can_close : 0,
+    archive : "build_src",
+    gui_debug : 2,
+    cdn : "https://pygame-web.github.io/cdn/0.9.3/",
+    autorun : 0,
+    PYBUILD : "3.12",
+    fb_ar   :  0.5,
+    fb_width : "400",
+    fb_height : "800"
+}
+
+function show_infobox() {
+    infobox.style.display = "block";
+    // Position is handled in CSS (centred under the loader).
+}
+
+</script>
+
+    <title>OLOS Tetris</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="theme-color" content="#04070f">
+
+    <link rel="icon" type="image/png" href="favicon.png" sizes="16x16">
+
+    <style>
+        :root {
+            --bg: #04070f;
+            --cyan: #00d2ff;
+            --amber: #ffb800;
+            --purple: #7c3aed;
+            --rose: #f43f5e;
+            --muted: #8b93a7;
+        }
+
+        /* ---- Page: never scroll, never select, never zoom on touch -------- */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden !important;
+            overscroll-behavior: none;
+            background: var(--bg) !important;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* ---- Canvas: always exactly 1:2, centred, fitted to the window ----
+           !important beats the inline sizes pygbag's resize code writes.     */
+        #canvas {
+            position: absolute !important;
+            inset: 0 !important;
+            margin: auto !important;
+            width: min(100vw, 50vh) !important;
+            height: min(100vh, 200vw) !important;
+            display: block;
+            border: 0;
+            outline: none;
+            background: transparent;
+            touch-action: none;
+            z-index: 5;
+        }
+
+        /* ---- Pygbag internals we do not want on screen -------------------- */
+        body:not(.debug) #crt,
+        body:not(.debug) #pyconsole,
+        body:not(.debug) #system,
+        body:not(.debug) #dlg,
+        body:not(.debug) #html {
+            display: none !important;
+        }
+        #status { display: none; }
+
+        /* ---- Splash: matches the in-game 10 x 20 grid ---------------------- */
+        #splash {
+            position: fixed;
+            inset: 0;
+            z-index: 999990;
+            pointer-events: none; /* taps must still reach the page to unlock audio */
+            background:
+                linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 100% 5%,
+                linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 10% 100%,
+                radial-gradient(ellipse at 50% 42%, rgba(0,210,255,.10), transparent 60%),
+                var(--bg);
+            transition: opacity .45s ease, visibility 0s linear .45s;
+        }
+        body.started #splash { opacity: 0; visibility: hidden; }
+
+        /* T-piece loader: four cells that light up in sequence */
+        .loader {
+            position: absolute;
+            left: 50%;
+            top: 38%;
+            width: 74px;
+            height: 48px;
+            margin-left: -37px;
+            display: grid;
+            grid-template-columns: repeat(3, 22px);
+            grid-template-rows: repeat(2, 22px);
+            gap: 4px;
+        }
+        .loader i {
+            border-radius: 5px;
+            animation: cell 1.4s ease-in-out infinite;
+        }
+        .loader i:nth-child(1) { background: var(--cyan);   grid-area: 1 / 1; }
+        .loader i:nth-child(2) { background: var(--amber);  grid-area: 1 / 2; animation-delay: .15s; }
+        .loader i:nth-child(3) { background: var(--purple); grid-area: 1 / 3; animation-delay: .30s; }
+        .loader i:nth-child(4) { background: var(--rose);   grid-area: 2 / 2; animation-delay: .45s; }
+        @keyframes cell {
+            0%, 100% { opacity: .25; transform: scale(.72); }
+            35%      { opacity: 1;   transform: scale(1); }
+        }
+        /* Once the game is ready to start, the piece stays fully lit */
+        body.ready .loader i { animation: none; opacity: 1; transform: none; }
+
+        /* ---- Download progress -------------------------------------------- */
+        #transfer {
+            position: fixed;
+            left: 50%;
+            top: 56%;
+            transform: translateX(-50%);
+            width: min(60%, 220px);
+            z-index: 999998;
+            pointer-events: none;
+        }
+        #progress {
+            display: block;
+            width: 100%;
+            height: 4px;
+            border: 0;
+            border-radius: 99px;
+            overflow: hidden;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255,255,255,.10);
+        }
+        #progress::-webkit-progress-bar   { background: transparent; }
+        #progress::-webkit-progress-value { background: var(--cyan); border-radius: 99px; }
+        #progress::-moz-progress-bar      { background: var(--cyan); border-radius: 99px; }
+
+        /* ---- Status line / start prompt (pygbag writes its text here) -------
+           The original text is hidden and replaced, so copy lives in CSS.     */
+        #infobox {
+            position: fixed;
+            left: 50% !important;
+            top: 58% !important;
+            transform: translateX(-50%);
+            z-index: 999999;
+            padding: 0;
+            background: none;
+            color: var(--muted);
+            font-size: 0;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        #transfer:not([hidden]) ~ #infobox { visibility: hidden; } /* progress bar shows instead */
+        #infobox::after {
+            content: "Loading game\2026";
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: .02em;
+        }
+        #infobox[data-state="ready"]::after {
+            content: "Tap to start";
+            display: inline-block;
+            padding: 13px 30px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--cyan);
+            border: 1.5px solid var(--cyan);
+            border-radius: 999px;
+            background: rgba(0,210,255,.08);
+            animation: ready 1.8s ease-in-out infinite;
+        }
+        @keyframes ready {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,210,255,0),   0 0 14px rgba(0,210,255,.25); }
+            50%      { box-shadow: 0 0 0 6px rgba(0,210,255,.08), 0 0 26px rgba(0,210,255,.45); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .loader i { animation: none; opacity: 1; transform: none; }
+            #infobox[data-state="ready"]::after { animation: none; }
+            #splash { transition: none; }
+        }
+
+        /* ---- Debug layout (only when debug() is called from the console) --- */
+        .topright { position: absolute; top: 0; right: 0; }
+        .bottomright { position: absolute; top: 40%; right: 0; }
+        .trinfo { position: relative; right: 0; border: 1px solid black; }
+        .framed { position: relative; top: 150px; right: 10px; border: 1px solid black; }
+        div.emscripten_border { border: 1px solid black; }
+    </style>
+
+    <script src="https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js"></script>
+
+</head>
+
+<body>
+
+    <div id="splash" aria-hidden="true">
+        <div class="loader"><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div id="transfer" align=center>
+        <div class="emscripten" id="status">Downloading...</div>
+        <div class="emscripten">
+            <progress value="0" max="100" id="progress"></progress>
+        </div>
+    </div>
+
+    <canvas class="emscripten" id="canvas"
+width="1px"
+height="1px"
+    oncontextmenu="event.preventDefault()" tabindex=1>
+    </canvas>
+
+    <canvas class="emscripten" id="canvas3d"
+width="400px"
+height="800px"
+    oncontextmenu="event.preventDefault()" tabindex=1 hidden>
+    </canvas>
+
+    <div id="infobox">Loading, please wait ...</div>
+
+    <div id=html></div>
+
+    <div id=crt  class=bottomright >
+
+        <div id="system" hidden>
+            <div class="button-container">
+                <button id="aiostop" disabled>AIO ⏏︎</button>
+                <button id="aiopaused_true" disabled>AIO ■</button>
+                <button id="aiopaused_false" disabled>AIO ▶</button>
+                <button id="pygame_mixer_music_pause" disabled>Music ■</button>
+            </div>
+
+            <div class="button-container">
+                <div id=load_min>min</div>
+                <div id=load_avg>avg</div>
+                <div id=load_max>max</div>
+              <button id="load_rst" disabled>RESET</button>
+            </div>
+
+            <div id="level">(battery level unknown)</div>
+            <div id="stateBattery">(charging state unknown)</div>
+
+        </div>
+
+        <div id=box class="emscripten_border" hidden=true>
+
+            <div id="info" class="trinfo"></div>
+
+            <iframe id="iframe" class="framed" name="iframe"
+width="470px" height="90%"
+allowtransparency="true"
+style="z-index: 10;"
+style="background: #FFFFFF;"
+frameborder="1"
+                allowfullscreen="true"
+                webkitallowfullscreen="true"
+                msallowfullscreen="true"
+                mozallowfullscreen="true"
+                sandbox="allow-same-origin allow-top-navigation allow-scripts allow-pointer-lock"
+                allow="autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated"
+                src="https://pygame-web.github.io/cdn/0.9.3/empty.html"
+                scrolling="yes">
+            </iframe>
+        </div>
+
+    </div>
+
+
+    <div id="dlg" hidden>
+        <input type="file" id="dlg_multifile" multiple accept="image/*">
+        <label for="dlg_multifile">Select files</label>
+    </div>
+
+    <div id="pyconsole">
+        <div id="terminal" tabIndex=1 align="left"></div>
+    </div>
+
+    <script type="application/javascript">
+
+    globalThis.__canvas_resized = (self, ecw, ech) => {
+        console.warn("TODO: panda3d canvas monitor", self, ecw, ech)
+    }
+
+    async function custom_onload(debug_hidden) {
+        // this is called before anything python is loaded
+        console.log(__FILE__, "custom_onload")
+
+        pyconsole.hidden = debug_hidden
+        system.hidden = debug_hidden
+        info.hidden = debug_hidden
+        box.hidden =  debug_hidden
+        // #transfer stays visible on purpose: it is the download progress bar,
+        // and the python startup code hides it once the runtime has loaded.
+
+        show_infobox()
+    }
+
+    function custom_prerun(){
+        // no python main and no (MEMFS + VFS) yet.
+        console.log(__FILE__, "custom_prerun")
+
+    }
+
+    function custom_postrun(){
+        // python main and no VFS filesystem yet.
+        console.log(__FILE__, "custom_postrun")
+
+    }
+
+    function debug() {
+        // allow to gain access to dev tools from js console
+        // but only on desktop. difficult to reach when in iframe
+        document.body.classList.add("debug")
+        python.config.debug = true
+        custom_onload(false)
+        Module.PyRun_SimpleString("shell.uptime()")
+        window_resize()
+    }
+
+    function info_inline(data){
+        document.getElementById("info").innerHTML = data
+    }
+
+    function info_online(url) {
+        // display info about current APK
+        fetch( url /*, options */)
+            .then((response) => response.text())
+            .then((html) => {
+                info_inline(html);
+        })
+        .catch((error) => {
+            console.warn(error);
+        });
+    }
+
+    function frame_online(url) {
+        window.frames["iframe"].location = url;
+    }
+
+    // Drive the splash from pygbag's own status box:
+    //   text mentions click/touch -> show the "Tap to start" prompt
+    //   box hidden by python      -> the game is running, fade the splash out
+    (function () {
+        const box = document.getElementById("infobox");
+        const sync = () => {
+            const ready = /click|touch/i.test(box.textContent || "");
+            box.dataset.state = ready ? "ready" : "loading";
+            document.body.classList.toggle("ready", ready);
+            if (box.style.display === "none") document.body.classList.add("started");
+        };
+        new MutationObserver(sync).observe(box, {
+            childList: true,
+            characterData: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["style"],
+        });
+        sync();
+    })();
+
+    </script>
+
+</body>
+</html>
