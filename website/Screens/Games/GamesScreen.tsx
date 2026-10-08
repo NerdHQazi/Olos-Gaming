@@ -71,9 +71,10 @@ const GAMES: Game[] = [
     slug: "tetris",
     title: "Tetris",
     description: "Stack blocks, clear lines, beat your score!",
+    detailsHref: "/dashboard/games/tetris/details",
     modes: ["Solo", "1v1"],
     image: "/tetris.png",
-    available: false,
+    available: true,
   },
 ];
 
@@ -91,7 +92,7 @@ function GameCard({
   return (
     <div className="group flex flex-col bg-[#0d1326] rounded-2xl border border-white/[0.07] overflow-hidden hover:border-blue-500/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-950/50">
       {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-4/3 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={game.image}

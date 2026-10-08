@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, Bai_Jamjuree } from "next/font/google";
+import { Inter, Outfit, Bai_Jamjuree, Space_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { WalletProvider } from "@/context/WalletContext";
@@ -13,7 +13,21 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
 const baiJamjuree = Bai_Jamjuree({
   variable: "--font-bai-jamjuree",
-  weight: ["700"],
+  weight: ["200", "300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+});
+
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
+  style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
@@ -32,7 +46,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} ${baiJamjuree.variable} antialiased`}>
+      <body className={`${inter.variable} ${outfit.variable} ${baiJamjuree.variable} ${spaceMono.variable} ${plusJakarta.variable} antialiased`}>
         <Web3Providers initialState={initialState}>
           <AuthProvider>
             <WalletProvider>
