@@ -46,8 +46,11 @@ export default function NeonTetrisBlitz({
   const play = (mode: Mode) => {
     if (!belowMin) onPlay?.(mode, stake);
 
-
-    router.push(`/dashboard/games/tetris`)
+    if (mode === "pvp") {
+      router.push(`/dashboard/games/tetris/match?stake=${stake}`);
+    } else {
+      router.push(`/dashboard/games/tetris`)
+    }
   };
 
   return (

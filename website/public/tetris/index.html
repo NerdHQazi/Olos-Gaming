@@ -7,7 +7,7 @@ Loading build_src from build_src.apk
     Python  : 3.12
     CDN URL : https://pygame-web.github.io/cdn/0.9.3/
     Screen  : 400x800
-    Title   : build_src
+    Title   : OLOS Tetris
     Folder  : build_src
     Authors : pgw
     SPDX-License-Identifier: cookiecutter.spdx
@@ -230,6 +230,12 @@ function show_infobox() {
             display: none !important;
         }
         #status { display: none; }
+
+        /* ---- Embedded in the Next page: the page draws the startup screen --
+           (the class is added by the script at the bottom of this file)       */
+        body.embedded #splash,
+        body.embedded #infobox,
+        body.embedded #transfer { display: none !important; }
 
         /* ---- Splash: matches the in-game 10 x 20 grid ---------------------- */
         #splash {
@@ -502,17 +508,37 @@ frameborder="1"
         window.frames["iframe"].location = url;
     }
 
-    // Drive the splash from pygbag's own status box:
-    //   text mentions click/touch -> show the "Tap to start" prompt
+    // Startup screen, driven by pygbag's own status box:
+    //   text mentions click/touch -> "Tap to start" prompt
     //   box hidden by python      -> the game is running, fade the splash out
+    // When this page is embedded in the Next page, it also tells the parent which
+    // step it is in, so the page can draw the same startup screen over the board.
     (function () {
         const box = document.getElementById("infobox");
+        const embedded = window.parent !== window;
+        if (embedded) document.body.classList.add("embedded");
+
+        let lastStatus = "";
+        const report = (status) => {
+            if (!embedded || status === lastStatus) return;
+            lastStatus = status;
+            try {
+                window.parent.postMessage(
+                    JSON.stringify({ source: "olos-tetris", type: "status", status: status }),
+                    "*"
+                );
+            } catch (e) {}
+        };
+
         const sync = () => {
-            const ready = /click|touch/i.test(box.textContent || "");
+            const started = box.style.display === "none";
+            const ready = !started && /click|touch/i.test(box.textContent || "");
             box.dataset.state = ready ? "ready" : "loading";
             document.body.classList.toggle("ready", ready);
-            if (box.style.display === "none") document.body.classList.add("started");
+            if (started) document.body.classList.add("started");
+            else report(ready ? "ready" : "loading");
         };
+
         new MutationObserver(sync).observe(box, {
             childList: true,
             characterData: true,

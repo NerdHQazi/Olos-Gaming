@@ -1,365 +1,161 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  NextPieceCard,
+  NextPieceStrip,
+  StartupOverlay,
+  formatClock,
+  useCoarsePointer,
+  useTetrisFeed,
+} from "./tetrisShared";
 
-const CYAN = "#00D2FF";
-const AMBER = "#FFB800";
-const PURPLE = "#7C3AED";
+const CYAN = "#00D3FE";
+const PURPLE = "#7034D7";
 
-/* -------------------------------------------------------------------------- */
-/*  Messages sent by the pygbag game                                          */
-/* -------------------------------------------------------------------------- */
+type Difficulty = "easy" | "medium" | "hard";
+const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
+const label = (d: Difficulty) => d[0].toUpperCase() + d.slice(1);
 
-type Outcome = "win" | "lose" | "draw" | "forfeit";
-
-interface NextPiece {
-  /** 1 = filled, 0 = empty. e.g. [[1,1,1],[0,1,0]] */
-  shape: number[][];
-  color?: string;
-}
-
-type GameMessage =
-  | {
-      source: "olos-tetris";
-      type: "state";
-      score: number;
-      lines: number;
-      level?: number;
-      multiplier?: number;
-      secondsLeft?: number;
-      next?: NextPiece;
-    }
-  | { source: "olos-tetris"; type: "end"; outcome?: "win" | "lose" | "draw" };
-
-function parseMessage(data: unknown): GameMessage | null {
-  let d = data;
-  if (typeof d === "string") {
-    try {
-      d = JSON.parse(d);
-    } catch {
-      return null;
-    }
-  }
-  if (!d || typeof d !== "object") return null;
-  const m = d as { source?: string; type?: string };
-  if (m.source !== "olos-tetris") return null;
-  return m.type === "state" || m.type === "end" ? (d as GameMessage) : null;
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Helpers                                                                   */
-/* -------------------------------------------------------------------------- */
-
-/** True on phones and tablets (touch as the primary input). */
-function useCoarsePointer() {
-  return useSyncExternalStore(
-    (onChange) => {
-      const mq = window.matchMedia("(pointer: coarse)");
-      mq.addEventListener("change", onChange);
-      return () => mq.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia("(pointer: coarse)").matches,
-    () => false
-  );
-}
-
-const formatTime = (s: number) =>
-  `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-
-function NextShape({ piece, cell }: { piece: NextPiece | null; cell: number }) {
-  return (
-    <div className="flex flex-col items-center gap-0.75" aria-hidden="true">
-      {piece?.shape.map((row, r) => (
-        <div key={r} className="flex gap-0.75">
-          {row.map((filled, c) => (
-            <div
-              key={c}
-              className="rounded-[3px]"
-              style={{
-                width: cell,
-                height: cell,
-                background: filled ? (piece.color ?? PURPLE) : "transparent",
-              }}
-            />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Component                                                                 */
-/* -------------------------------------------------------------------------- */
-
-interface Stats {
-  score: number;
-  lines: number;
-}
-
-interface LiveState extends Stats {
-  level: number;
-  multiplier: number;
-  next: NextPiece | null;
-}
-
-const INITIAL: LiveState = { score: 0, lines: 0, level: 1, multiplier: 1, next: null };
-
-export interface TetrisScreenProps {
+export interface TetrisPracticeScreenProps {
   gameSrc?: string;
   player?: { name: string; initials: string };
-  opponent?: { name: string; initials: string };
-  stake?: string;
-  durationSeconds?: number;
-  /** Feed this from your match server / websocket. */
-  opponentStats?: Stats;
-  onMatchEnd?: (outcome: Outcome, stats: Stats) => void;
-  onForfeit?: () => void;
+  initialDifficulty?: Difficulty;
+  onExit?: () => void;
 }
 
-export default function TetrisScreen({
+export default function TetrisPracticeScreen({
   gameSrc = "/tetris/index.html",
   player = { name: "You (CryptoKing)", initials: "ME" },
-  opponent = { name: "NeonSteer.eth", initials: "OP" },
-  stake = "50 GVT",
-  durationSeconds = 180,
-  opponentStats = { score: 0, lines: 0 },
-  onMatchEnd,
-  onForfeit,
-}: TetrisScreenProps) {
+  initialDifficulty = "medium",
+  onExit,
+}: TetrisPracticeScreenProps) {
   const router = useRouter();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const isTouch = useCoarsePointer();
+  const { iframeRef, stats, phase, started, over, reset } = useTetrisFeed();
 
-  const [game, setGame] = useState<LiveState>(INITIAL);
-  const [started, setStarted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(durationSeconds);
-  const [ended, setEnded] = useState<"win" | "lose" | "draw" | null>(null);
-  const [forfeited, setForfeited] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
+  const [elapsed, setElapsed] = useState(0);
   const [gameKey, setGameKey] = useState(0);
 
-  const opp = opponentStats;
-
-  const result: Outcome | null = forfeited
-    ? "forfeit"
-    : ended
-      ? ended
-      : started && timeLeft === 0
-        ? game.score > opp.score
-          ? "win"
-          : game.score < opp.score
-            ? "lose"
-            : "draw"
-        : null;
-
-  /* ---- messages from the game iframe ------------------------------------ */
+  /* ---- elapsed time counts up while a game is running -------------------- */
   useEffect(() => {
-    const onMessage = (e: MessageEvent) => {
-      if (e.origin !== window.location.origin) return;
-      if (e.source !== iframeRef.current?.contentWindow) return;
-      const msg = parseMessage(e.data);
-      if (!msg) return;
-
-      if (msg.type === "state") {
-        setStarted(true);
-        setGame((g) => ({
-          score: msg.score,
-          lines: msg.lines,
-          level: msg.level ?? g.level,
-          multiplier: msg.multiplier ?? g.multiplier,
-          next: msg.next ?? g.next,
-        }));
-        if (typeof msg.secondsLeft === "number") setTimeLeft(msg.secondsLeft);
-      } else {
-        setEnded(msg.outcome ?? "lose");
-      }
-    };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, []);
-
-  /* ---- local clock (starts with the first state message) ----------------- */
-  useEffect(() => {
-    if (!started || result) return;
-    const id = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
+    if (!started || over) return;
+    const id = setInterval(() => setElapsed((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, [started, result]);
+  }, [started, over]);
 
-  /* ---- stop arrow keys / space from scrolling the page ------------------- */
-  useEffect(() => {
-    const block = (e: KeyboardEvent) => {
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener("keydown", block);
-    return () => window.removeEventListener("keydown", block);
-  }, []);
-
-  /* ---- report result ----------------------------------------------------- */
-  useEffect(() => {
-    if (result) onMatchEnd?.(result, { score: game.score, lines: game.lines });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result]);
-
-  /* ---- forfeit confirm reverts on its own -------------------------------- */
-  useEffect(() => {
-    if (!confirming) return;
-    const id = setTimeout(() => setConfirming(false), 3000);
-    return () => clearTimeout(id);
-  }, [confirming]);
-
-  const handleForfeit = () => {
-    if (!confirming) {
-      setConfirming(true);
-      return;
-    }
-    setConfirming(false);
-    setForfeited(true);
-    iframeRef.current?.contentWindow?.postMessage(
-      { source: "olos-host", type: "forfeit" },
-      window.location.origin
-    );
-    onForfeit?.();
+  const restart = () => {
+    reset();
+    setElapsed(0);
+    setGameKey((k) => k + 1); // remounts the iframe, which reloads the game
   };
 
-  const playAgain = () => {
-    setGame(INITIAL);
-    setStarted(false);
-    setTimeLeft(durationSeconds);
-    setEnded(null);
-    setForfeited(false);
-    setGameKey((k) => k + 1); // remounts the iframe, reloading the game
+  const changeDifficulty = (next: Difficulty) => {
+    if (next === difficulty) return;
+    setDifficulty(next);
+    restart(); // a new difficulty always starts a fresh game
   };
 
-  const total = game.score + opp.score;
-  const myShare = total === 0 ? 50 : (game.score / total) * 100;
+  const exit = () => (onExit ? onExit() : router.back());
 
-  const resultCopy: Record<Outcome, { title: string; body: string; tone: string }> = {
-    win: { title: "You won", body: `${stake} has been sent to your wallet.`, tone: "text-emerald-400" },
-    lose: { title: "You lost", body: `${opponent.name} takes the ${stake} stake.`, tone: "text-red-400" },
-    draw: { title: "Draw", body: "Scores were level. Both stakes are returned.", tone: "text-slate-200" },
-    forfeit: { title: "You forfeited", body: `${opponent.name} takes the ${stake} stake.`, tone: "text-red-400" },
-  };
-
-  const hint = isTouch
-    ? "Tap to rotate · Swipe to move · Flick down to drop"
-    : "Use Arrow keys to Rotate & Slide pieces";
+  const src = `${gameSrc}?mode=practice&difficulty=${difficulty}`;
 
   return (
-    // h-dvh follows the visible viewport on mobile browsers (address bar showing or hidden).
-    <div className="flex h-dvh min-h-120 flex-col bg-[#03050b] font-sans text-white">
+    <div className="flex h-dvh min-h-120 flex-col bg-[#03050b] font-bai text-white">
       {/* ------------------------------ Header ------------------------------ */}
       <header className="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-white/[0.07] bg-[#070b17] px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5 sm:py-4">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bai-jamjuree-bold text-[12px] font-semibold sm:h-10 sm:w-10 sm:text-sm"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs bai-jamjuree-bold sm:h-9 sm:w-9 sm:text-sm"
             style={{ background: PURPLE }}
           >
             {player.initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate bai-jamjuree-bold text-[14px]">{player.name}</p>
+            <p className="truncate text-xs bai-jamjuree-bold sm:text-sm">{player.name}</p>
             <p
-              className="truncate text-[11px] inter-semibold tabular-nums sm:text-xs"
+              className="truncate text-[11px] inter-bold tabular-nums sm:text-xs"
               style={{ color: CYAN }}
             >
-              Score: {game.score.toLocaleString()} · Lines: {game.lines}
+              Score: {stats.score.toLocaleString()}
             </p>
           </div>
         </div>
 
-        <div className="text-center">
-          <p className="bai-jamjuree-bold text-[22px] leading-none tabular-nums">
-            {formatTime(timeLeft)}
-          </p>
-          <p
-            className="mt-1 text-[10px] inter-semibold uppercase tracking-wide sm:mt-1.5 sm:text-[11px]"
-            style={{ color: AMBER }}
+        <div className="flex flex-col items-center gap-0.5 text-center">
+          <span
+            className="rounded-full border border-white/8 bg-[#0d1626] px-2.5 py-0.5 text-[9px] inter-bold uppercase tracking-wider sm:text-[10px]"
+            style={{ color: CYAN }}
           >
-            Active stake: {stake}
+            Practice mode
+          </span>
+          <p className="whitespace-nowrap text-sm bai-jamjuree-bold tabular-nums sm:text-lg">
+            Time Elapsed: {formatClock(elapsed)}
           </p>
         </div>
 
         <div className="flex min-w-0 items-center justify-end gap-2 sm:gap-3">
           <div className="min-w-0 text-right">
-            <p className="truncate bai-jamjuree-bold text-[14px]">{opponent.name}</p>
-            <p
-              className="truncate text-[11px] inter-semibold tabular-nums sm:text-xs"
-              style={{ color: AMBER }}
-            >
-              Score: {opp.score.toLocaleString()} · Lines: {opp.lines}
+            <p className="truncate text-xs bai-jamjuree-bold sm:text-sm">OLOS AI (System)</p>
+            <p className="truncate text-[11px] inter-bold text-indigo-300 sm:text-xs">
+              Difficulty: <span className="uppercase">{difficulty}</span>
             </p>
           </div>
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bai-jamjuree-bold text-[14px] sm:h-10 sm:w-10"
-            style={{ background: AMBER }}
-          >
-            {opponent.initials}
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[#161d2e] text-xs bai-jamjuree-bold sm:h-10 sm:w-10 sm:text-sm">
+            AI
           </div>
         </div>
       </header>
 
       {/* ------------------------------- Stage ------------------------------ */}
       <main className="flex min-h-0 flex-1 flex-col items-center px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pt-8">
-        {/* Score share bar */}
-        <div
-          className="flex h-1.5 w-full max-w-118.5 shrink-0 overflow-hidden rounded-full"
-          role="img"
-          aria-label={`Score share: you ${Math.round(myShare)}%, opponent ${Math.round(100 - myShare)}%`}
-        >
-          <div
-            className="h-full transition-[width] duration-500 ease-out"
-            style={{ width: `${myShare}%`, background: CYAN }}
-          />
-          <div className="h-full flex-1" style={{ background: AMBER }} />
-        </div>
-
-        {/* Phone HUD: next piece, level and multiplier in one slim row */}
-        <div className="mt-3 flex w-full max-w-118.5 shrink-0 items-center justify-between rounded-xl border border-white/9 bg-[#070b17] px-4 py-2 sm:hidden">
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-[10px] inter-semibold uppercase tracking-wider text-[#A4B7EB]">
-              Next
-            </span>
-            <div className="flex min-h-5.75 items-center">
-              <NextShape piece={game.next} cell={10} />
-            </div>
-          </div>
-          <div className="text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-              Level
-            </p>
-            <p className="text-sm font-bold leading-tight">
-              {String(game.level).padStart(2, "0")}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-              Multiplier
-            </p>
-            <p className="text-sm font-bold leading-tight tabular-nums text-emerald-400">
-              ×{game.multiplier.toFixed(1)}
-            </p>
+        {/* Difficulty selector */}
+        <div className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <span className="text-xs inter-light sm:text-sm">Select AI Difficulty:</span>
+          <div role="group" aria-label="AI difficulty" className="flex gap-2">
+            {DIFFICULTIES.map((d) => {
+              const active = d === difficulty;
+              return (
+                <button
+                  key={d}
+                  onClick={() => changeDifficulty(d)}
+                  aria-pressed={active}
+                  className={`rounded-lg border px-4 py-2 text-xs inter-bold transition touch-manipulation focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white ${
+                    active
+                      ? "border-transparent text-[#03050b]"
+                      : "border-white/10 bg-[#0b1020] text-white hover:bg-white/10"
+                  }`}
+                  style={active ? { background: CYAN } : undefined}
+                >
+                  {label(d)}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Board row: the board takes whatever height is left on the screen */}
-        <div className="mt-3 flex min-h-0 w-full flex-1 items-start justify-center gap-5 sm:mt-8">
+        {/* Phones: next piece, level and multiplier in one compact row */}
+        <div className="mt-3 w-full max-w-105 shrink-0 sm:hidden">
+          <NextPieceStrip next={stats.next} level={stats.level} multiplier={stats.multiplier} />
+        </div>
+
+        {/* Board + side cards: the board takes whatever height is left */}
+        <div className="mt-4 flex min-h-0 w-full flex-1 items-start justify-center gap-4 sm:mt-8 sm:gap-6">
           <div
             className="relative h-full max-h-140 shrink-0"
             style={{ aspectRatio: "1 / 2" }}
           >
             <div
               className="h-full w-full touch-none select-none overflow-hidden rounded-2xl border bg-[#04070f]"
-              style={{ borderColor: CYAN, boxShadow: `0 0 18px ${CYAN}33` }}
+              style={{ borderColor: PURPLE, boxShadow: `0 0 18px ${PURPLE}40` }}
             >
               <iframe
-                key={gameKey}
+                key={`${difficulty}-${gameKey}`}
                 ref={iframeRef}
-                src={gameSrc}
-                title="Tetris"
+                src={src}
+                title="Tetris practice"
                 scrolling="no"
                 allow="autoplay; fullscreen; gamepad"
                 className="block h-full w-full touch-none border-0"
@@ -367,26 +163,27 @@ export default function TetrisScreen({
               />
             </div>
 
-            {result && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl bg-[#03050b]/90 px-4 text-center backdrop-blur-sm sm:gap-4 sm:px-6">
-                <p className={`font-heading bai-jamjuree-bold uppercase text-[22px] ${resultCopy[result].tone}`}>
-                  {resultCopy[result].title}!
+            {/* Startup screen: loader, then "tap to start", then fades out */}
+            <StartupOverlay phase={phase} touch={isTouch} />
+
+            {over && (
+              <div className="absolute inset-0 z-20 bai-jamjuree-semibold flex flex-col items-center justify-center gap-3 rounded-2xl bg-[#03050b]/90 px-4 text-center backdrop-blur-sm sm:gap-4 sm:px-6">
+                <p className="text-2xl font-semibold sm:text-3xl">Game over</p>
+                <p className="text-xs tabular-nums text-slate-300 sm:text-sm">
+                  {stats.score.toLocaleString()} points · {stats.lines} lines
                 </p>
-                <p className="text-xs bai-jamjuree-light text-slate-300 sm:text-sm">{resultCopy[result].body}</p>
-                <p className="text-xs bai-jamjuree-bold tabular-nums text-slate-400 sm:text-sm">
-                  {game.score.toLocaleString()} vs {opp.score.toLocaleString()}
-                </p>
-                <div className="mt-1 flex flex-wrap justify-center gap-2 sm:mt-2 sm:gap-2">
+                <p className="text-xs text-slate-400">No payout in practice mode.</p>
+                <div className="mt-1 flex flex-wrap justify-center gap-2 sm:gap-3">
                   <button
-                    onClick={playAgain}
-                    className="rounded-xl uppercase bai-jamjuree-bold px-4 py-2 text-[11px] text-[#03050b] transition hover:brightness-110 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white sm:px-5"
+                    onClick={restart}
+                    className="rounded-full px-4 py-2 text-sm font-bold text-[#03050b] transition hover:brightness-110 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white sm:px-5"
                     style={{ background: CYAN }}
                   >
-                    Play again
+                    Try again
                   </button>
                   <button
-                    onClick={() => router.back()}
-                    className="rounded-xl uppercase bai-jamjuree-bold border border-white/20 px-4 py-2 text-[11px] transition hover:bg-white/10 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white sm:px-5"
+                    onClick={exit}
+                    className="rounded-full border border-white/20 px-4 py-2 text-sm font-bold transition hover:bg-white/10 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-white sm:px-5"
                   >
                     Exit
                   </button>
@@ -395,43 +192,35 @@ export default function TetrisScreen({
             )}
           </div>
 
-          {/* Side panel (tablets and desktop) */}
-          <aside className="hidden shrink-0 flex-col gap-3 sm:flex">
-            <div className="w-25 rounded-xl border border-white/9 bg-[#060A16] p-3">
-              <p className="text-[10px] text-center inter-semibold uppercase tracking-wider text-[#A4B7EB]">
-                Next piece
-              </p>
-              <div className="mt-2 flex min-h-8 justify-center">
-                <NextShape piece={game.next} cell={14} />
-              </div>
-            </div>
+          {/* Next piece + level / multiplier (tablet and up) */}
+          <div className="hidden w-32 shrink-0 sm:block">
+            <NextPieceCard next={stats.next} level={stats.level} multiplier={stats.multiplier} />
+          </div>
 
-            <div className="w-fit rounded-xl border border-white/9 bg-[#060A16] p-3">
-              <p className="text-[8px] inter-semibold uppercase tracking-wider text-slate-500">
-                Speed level
-              </p>
-              <p className="mt-0.5 text-[18px] inter-bold leading-tight">
-                LEVEL {String(game.level).padStart(2, "0")}
-              </p>
-              <p className="mt-3 text-[8px] inter-semibold uppercase tracking-wider text-slate-500">
-                Multiplier
-              </p>
-              <p className="mt-0.5 text-[#00FF87] inter-bold tabular-nums text-[18px]">
-                ×{game.multiplier.toFixed(1)}
-              </p>
-            </div>
+          {/* Info card (desktop) */}
+          <aside className="hidden min-w-0 max-w-105 flex-1 rounded-xl border border-white/9 bg-[#060A16] p-5 md:block">
+            <h2 className="text-sm bai-jamjuree-bold uppercase tracking-wide">AI Training</h2>
+            <p className="mt-2 text-xs inter-light leading-relaxed text-indigo-200/80">
+              Use this sandbox zone to refine your block manipulation, clearing pacing, and layout planning before staking live on-chain assets.
+            </p>
           </aside>
         </div>
 
         {/* Footer row */}
-        <div className="mt-3 flex w-full max-w-140 shrink-0 items-center justify-between gap-3 sm:mt-6">
-          <p className="text-[10px] text-[#A4B7EB] inter-light sm:text-[12px]">{hint}</p>
+        <div className="mt-4 flex w-full max-w-140 shrink-0 items-center justify-between gap-3 sm:mt-6">
+          <div className="space-y-0.5 text-xs text-indigo-200/80 inter-light">
+            <p>Sandbox rules apply. Payouts are not rewarded for PRACTICE mode.</p>
+            {isTouch && (
+              <p className="text-[11px] text-slate-500">
+                Tap to rotate · Swipe to move · Flick down to drop
+              </p>
+            )}
+          </div>
           <button
-            onClick={handleForfeit}
-            disabled={!!result}
-            className="shrink-0 rounded-lg border border-red-500/70 bg-red-950/20 px-4 py-2.5 text-xs bai-jamjuree-bold uppercase tracking-wide text-red-500 transition touch-manipulation hover:bg-red-500/10 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400 disabled:opacity-40 sm:px-5"
+            onClick={exit}
+            className="shrink-0 rounded-lg border border-red-500/70 bg-red-950/20 px-4 py-2.5 text-xs bai-jamjuree-bold uppercase tracking-wide text-red-500 transition touch-manipulation hover:bg-red-500/10 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-red-400 sm:px-5"
           >
-            {confirming ? "Confirm forfeit?" : "Forfeit game"}
+            Exit sandbox
           </button>
         </div>
       </main>
