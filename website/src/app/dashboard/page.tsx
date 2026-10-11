@@ -1,14 +1,12 @@
 "use client";
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useWallet } from "@/context/WalletContext";
 import Avatar from "@/components/app/Avatar";
 import AppFooter from "@/components/app/AppFooter";
 
-// TODO: no backend/leaderboard/match-history endpoints exist yet for any of
-// this — everything below is placeholder mock data, clearly separated so
-// it's easy to find and swap for real API calls later.
 const MOCK_LEADERBOARD = [
   { name: "Nafisa", score: 12480 },
   { name: "GreenKing", score: 8950 },
@@ -16,54 +14,83 @@ const MOCK_LEADERBOARD = [
   { name: "Satoshi12", score: 5210 },
   { name: "BlockM", score: 4380 },
 ];
+
 const MOCK_MATCHES = [
   { game: "Snake Battle", time: "2m ago", result: "won" as const, amount: 120 },
-  {
-    game: "Quantum Chess",
-    time: "2m ago",
-    result: "lost" as const,
-    amount: 80,
-  },
+  { game: "Chess Arena", time: "2m ago", result: "lost" as const, amount: 80 },
   { game: "BlockBlitz", time: "2m ago", result: "won" as const, amount: 95 },
 ];
-const CATEGORIES = ["All", "Strategy", "Arena", "Arcade", "Board", "Action"];
-const GAMES = [
+
+type GameCategory = "Strategy" | "Puzzle" | "Arcade" | "Board" | "Action";
+
+type Game = {
+  slug: string;
+  name: string;
+  category: GameCategory;
+  modes: ("Solo" | "1v1")[];
+  players: string;
+  rating: number;
+  image: string;
+  available: boolean;
+  description: string;
+};
+
+const CATEGORIES = ["All", "Strategy", "Puzzle", "Arcade", "Board", "Action"] as const;
+
+const GAMES: Game[] = [
   {
-    name: "Quantum Chess",
+    slug: "snake",
+    name: "Snake",
+    category: "Arcade",
+    modes: ["Solo", "1v1"],
+    players: "1,920",
+    rating: 4.8,
+    image: "/images/game-snake-featured.png",
+    available: true,
+    description: "Classic snake on-chain. Eat, grow, survive — last snake standing wins the pool.",
+  },
+  {
+    slug: "chess",
+    name: "Chess Arena",
     category: "Strategy",
+    modes: ["Solo", "1v1"],
     players: "1,200",
     rating: 4.9,
-    image: "/images/game-quantumchess-banner.png",
+    image: "/game-quantumchess-banner.png",
+    available: true,
+    description: "The ultimate strategy game. Outthink your opponent in real-time 1v1 or AI matches.",
   },
   {
-    name: "Satoshi Runner",
-    category: "Action",
-    players: "1,920",
-    rating: 4.4,
-    image: "/images/game-satoshirunner-banner.png",
-  },
-  {
-    name: "BlockBlitz",
-    category: "Arcade",
+    slug: "checkers",
+    name: "Checkers",
+    category: "Board",
+    modes: ["Solo", "1v1"],
     players: "850",
-    rating: 4.6,
-    image: "/images/game-blockblitz-banner.png",
+    rating: 4.7,
+    image: "/game-blockblitz-banner.png",
+    available: true,
+    description: "Classic board game. Captures are mandatory. King me.",
+  },
+  {
+    slug: "jumping-jack",
+    name: "Jumping Jack",
+    category: "Arcade",
+    modes: ["Solo", "1v1"],
+    players: "—",
+    rating: 0,
+    image: "/game-satoshirunner-banner.png",
+    available: false,
+    description: "Jump between platforms. How high can you climb?",
   },
 ];
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { balance, isLoading: walletLoading } = useWallet() as {
-    balance?: number;
-    isLoading?: boolean;
-  };
-  const [activeCategory, setActiveCategory] = useState("All");
+  const { balance, isLoading: walletLoading } = useWallet() as { balance?: number; isLoading?: boolean };
+  const [activeCategory, setActiveCategory] = useState<string>("All");
 
-  const displayName = user?.username || user?.email?.split("@")[0] || "Player";
   const filteredGames =
-    activeCategory === "All"
-      ? GAMES
-      : GAMES.filter((g) => g.category === activeCategory);
+    activeCategory === "All" ? GAMES : GAMES.filter((g) => g.category === activeCategory);
 
   return (
     <>
@@ -278,64 +305,15 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  sub,
-  icon,
-  valueClassName = "text-white",
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  icon: string;
-  valueClassName?: string;
-}) {
+function StatCard({ label, value, sub, icon, valueClassName = "text-white" }: { label: string; value: string; sub: string; icon: string; valueClassName?: string }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-[#0B1121] p-4 md:p-5">
       <div className="flex items-center gap-2">
         <span className="text-lg">{icon}</span>
-        <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">
-          {label}
-        </p>
+        <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">{label}</p>
       </div>
-      <p className={`mt-3 text-xl md:text-2xl font-black ${valueClassName}`}>
-        {value}
-      </p>
+      <p className={`mt-3 text-xl md:text-2xl font-black ${valueClassName}`}>{value}</p>
       <p className="mt-1 text-xs text-gray-500">{sub}</p>
-    </div>
-  );
-}
-
-function ProgressCard({
-  name,
-  subtitle,
-  percent,
-  image,
-}: {
-  name: string;
-  subtitle: string;
-  percent: number;
-  image: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-[#0B1121] p-4 flex items-center gap-4">
-      <div className="w-16 h-20 rounded-lg overflow-hidden shrink-0">
-        <Image
-          src={image}
-          alt=""
-          width={64}
-          height={80}
-          className="w-full h-full object-cover"
-        />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-bold text-white truncate">{name}</p>
-        <p className="text-xs text-gray-500">{subtitle}</p>
-      </div>
-      <span className="text-sm font-black text-[#22D3EE] shrink-0">
-        {percent}%
-      </span>
     </div>
   );
 }

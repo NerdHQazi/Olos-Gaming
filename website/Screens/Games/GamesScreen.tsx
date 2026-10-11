@@ -9,8 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-// PvS is only wired up for the turn-based games with a System move selector (see Phase 3 audit).
-const PVS_GAME_SLUGS = ["chess", "checkers"];
+// PvS is only wired up for the turn-based games with a System move selector.
+const PVS_GAME_SLUGS = ["checkers"];
 
 type FilterType = "All" | "Solo" | "1v1";
 
@@ -21,6 +21,7 @@ type Game = {
   modes: FilterType[];
   image: string;
   available: boolean;
+  detailsHref?: string;
 };
 
 const GAMES: Game[] = [
@@ -37,7 +38,8 @@ const GAMES: Game[] = [
     title: "Chess",
     description: "The ultimate strategy game. Outthink your opponent.",
     modes: ["1v1"],
-    image: "/tetris.png",
+    image: "/game-quantumchess-banner.png",
+    detailsHref: "/dashboard/games/chess/details",
     available: true,
   },
   {
@@ -135,19 +137,30 @@ function GameCard({
               >
                 Practice
               </Link>
-              <button
-                onClick={() => onSelect1v1(game)}
-                className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-blue-500/20 hover:border-blue-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
-              >
-                1v1 Match
-              </button>
-              {PVS_GAME_SLUGS.includes(game.slug) && (
-                <button
-                  onClick={() => onSelectSystem(game)}
-                  className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-purple-500/20 hover:border-purple-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
+              {game.detailsHref ? (
+                <Link
+                  href={game.detailsHref}
+                  className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-blue-500/20 hover:border-blue-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
                 >
-                  vs System
-                </button>
+                  Details & Match
+                </Link>
+              ) : (
+                <>
+                  <button
+                    onClick={() => onSelect1v1(game)}
+                    className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-blue-500/20 hover:border-blue-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
+                  >
+                    1v1 Match
+                  </button>
+                  {PVS_GAME_SLUGS.includes(game.slug) && (
+                    <button
+                      onClick={() => onSelectSystem(game)}
+                      className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-purple-500/20 hover:border-purple-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
+                    >
+                      vs System
+                    </button>
+                  )}
+                </>
               )}
             </>
           ) : (
@@ -187,38 +200,15 @@ export default function GamesScreen() {
   const [startingSystemMatch, setStartingSystemMatch] = useState(false);
   const [systemMatchError, setSystemMatchError] = useState<string | null>(null);
 
-  const logAudit = (event: string, extra: Record<string, unknown> = {}) => {
-    const entry = {
-      ts: new Date().toISOString(),
-      event,
-      game: selectedGameForStake?.slug ?? null,
-      stake: activeStake,
-      matchmakingActive,
-      ...extra,
-    };
-
-    try {
-      if (typeof window !== "undefined") {
-        const w = window as any;
-        if (!Array.isArray(w.__MM_AUDIT_LOGS)) {
-          w.__MM_AUDIT_LOGS = [];
-        }
-        w.__MM_AUDIT_LOGS.push(entry);
-      }
-    } catch {
-      // no-op
-    }
-
-    console.log("[MM_AUDIT]", entry);
-  };
-
   const handleSelect1v1 = (game: Game) => {
+    if (game.detailsHref) {
+      router.push(game.detailsHref);
+      return;
+    }
     if (!isLoggedIn) {
-      logAudit("games.1v1_click_redirect_auth", { clickedGame: game.slug });
       router.push("/auth");
       return;
     }
-    logAudit("games.1v1_click_open_stake", { clickedGame: game.slug });
     setSelectedGameForStake(game);
   };
 
@@ -227,21 +217,20 @@ export default function GamesScreen() {
   );
 
   const handleStartMatch = (stake: number) => {
-    logAudit("games.start_match_click", { selectedStake: stake });
     setActiveStake(stake);
     setMatchmakingActive(true);
   };
 
   const handleMatchmakingComplete = (mId: string) => {
-    logAudit("games.matchmaking_complete", { completedMatchId: mId });
     alert(`Game starting now for ${selectedGameForStake?.title}!`);
-    logAudit("games.redirect_to_board", {
-      url: `/dashboard/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}`,
-    });
     location.href = `/dashboard/games/${selectedGameForStake?.slug}?mode=1v1&stake=${activeStake}&matchId=${mId}`;
   };
 
   const handleSelectSystem = (game: Game) => {
+    if (game.detailsHref) {
+      router.push(game.detailsHref);
+      return;
+    }
     if (!isLoggedIn) {
       router.push("/auth");
       return;
@@ -273,8 +262,6 @@ export default function GamesScreen() {
 
   return (
     <main className="min-h-screen bg-[#0B1121] text-white">
-      {/* <Navbar /> */}
-
       <div className="max-w-[1567px] mx-auto px-8 lg:px-16 pb-28">
         {matchmakingActive && selectedGameForStake ? (
           <div className="flex flex-col items-center">
@@ -331,7 +318,7 @@ export default function GamesScreen() {
         ) : (
           <>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end gap-6 mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-6 mb-8 pt-6">
               <div>
                 <p className="text-[#00d2ff] text-[11px] font-black uppercase tracking-[0.4em] mb-2">
                   Olos Gaming
@@ -365,59 +352,6 @@ export default function GamesScreen() {
               </div>
             </div>
 
-            {/* Live matches bar */}
-            <div className="flex items-center gap-4 px-5 py-3.5 rounded-xl border border-[#00d2ff]/15 bg-[#00d2ff]/[0.04] mb-10">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="text-[#00d2ff] shrink-0"
-              >
-                <path
-                  d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx="9"
-                  cy="7"
-                  r="4"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span className="text-white text-[13px] font-black">
-                Live matches:
-              </span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {[
-                  { name: "Snake", count: 24, color: "#22c55e" },
-                  { name: "Chess", count: 18, color: "#3b82f6" },
-                  { name: "Checkers", count: 12, color: "#f87171" },
-                ].map((m) => (
-                  <span
-                    key={m.name}
-                    className="px-3 py-0.5 rounded-full border text-[12px] font-black"
-                    style={{ color: m.color, borderColor: `${m.color}40` }}
-                  >
-                    {m.name} ({m.count})
-                  </span>
-                ))}
-              </div>
-              <span className="ml-auto flex items-center gap-1.5 text-[11px] font-bold text-[#00d2ff]/60">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00d2ff] animate-pulse" />
-                Live
-              </span>
-            </div>
-
             {/* Game Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 animate-fade-in-up">
               {visible.map((game) => (
@@ -429,13 +363,6 @@ export default function GamesScreen() {
                 />
               ))}
             </div>
-
-            <p className="text-center text-gray-700 text-xs font-bold uppercase tracking-widest mt-16">
-              More games coming soon ·{" "}
-              <Link href="/" className="hover:text-white transition-colors">
-                Back to Home
-              </Link>
-            </p>
           </>
         )}
       </div>
