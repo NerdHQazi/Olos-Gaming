@@ -19,7 +19,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { RiCoinsFill } from "react-[#20ceee]";
+import { RiCoinsFill } from "react-icons/ri";
 import { FaEthereum } from "react-icons/fa";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { useAppKitAccount } from "@reown/appkit/react";
@@ -248,7 +248,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Bottom Actions Area */}
             <div className="pt-6 space-y-4">
-              <div className="rounded-lg border-[2px] border-[#2A1060] bg-[#1A0A3C33] p-3">
+              <div className="rounded-lg border-2 border-[#2A1060] bg-[#1A0A3C33] p-3">
                 <div className="mb-1 text-[14px] font-black text-white">
                   Invite & Earn
                 </div>
@@ -277,7 +277,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="group flex w-full h-10 items-center gap-3 rounded-[12px] px-3 text-[14px] font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-all active:scale-95"
+                className="group flex w-full h-10 items-center gap-3 rounded-xl px-3 text-[14px] font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/40 transition-all active:scale-95"
               >
                 <LogOut size={18} className="text-red-400 group-hover:rotate-12 transition-transform" />
                 <span>Log Out</span>
@@ -321,7 +321,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                 <Link
                   href="/dashboard/wallet"
-                  className="hidden rounded-[8px] border border-[#2A1060] bg-[#1A0A3C] px-3 py-1 sm:block"
+                  className="hidden rounded-lg border border-[#2A1060] bg-[#1A0A3C] px-3 py-1 sm:block"
                 >
                   <div className="text-[11px] font-medium text-[#A4B7EB]">
                     GVT Balance
