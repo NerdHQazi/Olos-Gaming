@@ -46,9 +46,10 @@ const GAMES: Game[] = [
     slug: "checkers",
     title: "Checkers",
     description:
-      "Classic board game for two players. Capture all enemy pieces to win!",
+      "Tactical on-chain board game. Jump opponents, promote kings, and capture the board for GVT rewards!",
     modes: ["Solo", "1v1"],
-    image: "/bounce.png",
+    image: "/images/tactical-checkers-banner.png",
+    detailsHref: "/dashboard/games/checkers",
     available: true,
   },
   {
