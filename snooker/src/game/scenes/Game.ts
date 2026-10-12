@@ -6,6 +6,7 @@ import { Ball } from "../ball";
 import { Board } from "./board";
 import { Stick } from "./stick";
 import { Bot } from "./Bot";
+import { STOP_SPEED_THRESHOLD, ballSpeed, computeShotSpeed, isBallStopped, toPhysics } from "../shot";
 
 export class Game extends Scene {
     cursor: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -94,7 +95,10 @@ export class Game extends Scene {
 
         if (ball === this.me) {
             ball.rigid_body.setTranslation(
-                { x: this.board.Line, y: this.scale.height / 2 },
+                {
+                    x: toPhysics(this.board.Line),
+                    y: toPhysics(this.scale.height / 2),
+                },
                 true,
             );
             ball.rigid_body.setLinvel({ x: 0, y: 0 }, true);
@@ -128,12 +132,21 @@ export class Game extends Scene {
     }
 
     allBallsStopped(): boolean {
-        const threshold = 5; // treat anything below this speed as "stopped"
         return this.balls.every((ball) => {
             const v = ball.rigid_body.linvel();
-            const speed = Math.sqrt(v.x * v.x + v.y * v.y);
-            return speed < threshold;
+            return ballSpeed(v.x, v.y) < STOP_SPEED_THRESHOLD;
         });
+    }
+
+    // Snap imperceptibly slow balls (< STOP_SPEED_THRESHOLD) to a full stop
+    // so rolls end crisply instead of creeping for seconds on damping alone.
+    settleSlowBalls(): void {
+        for (const ball of this.balls) {
+            const v = ball.rigid_body.linvel();
+            if (isBallStopped(v.x, v.y)) {
+                ball.rigid_body.setLinvel({ x: 0, y: 0 }, true);
+            }
+        }
     }
 
     update(time: number, delta: number): void {
@@ -169,6 +182,7 @@ export class Game extends Scene {
         }
 
         if (this.allBallsStopped() && this.isBeenShot) {
+            this.settleSlowBalls();
             this.isBeenShot = false;
             this.switchTurn();
         }
@@ -189,10 +203,7 @@ export class Game extends Scene {
         if (pointer.isDown) {
             this.pullBack = Math.min(this.pullBack + 3, this.Max_pullback);
         } else if (justReleased && this.pullBack > 0) {
-            const minSpeed = 20000;
-            const maxSpeed = 50000;
-            const chargeRatio = this.pullBack / this.Max_pullback;
-            const shotSpeed = minSpeed + chargeRatio * (maxSpeed - minSpeed);
+            const shotSpeed = computeShotSpeed(this.pullBack, this.Max_pullback);
 
             cueball.setVelocity(
                 Math.cos(angle) * shotSpeed,

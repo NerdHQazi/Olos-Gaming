@@ -5,8 +5,12 @@ import {
     World,
 } from "@dimforge/rapier2d-compat";
 import { Scene } from "phaser";
+import { BALL_LINEAR_DAMPING, toPhysics, toPixels } from "./shot";
 
 export class Ball {
+    // Ball radius in pixels for rendering. The physics collider uses the
+    // same radius converted to world units (BALL_RADIUS_PX * WORLD_SCALE).
+    static readonly RADIUS_PX = 15;
     world: World;
     scene: Scene;
     rigid_body: RigidBody;
@@ -39,14 +43,18 @@ export class Ball {
         this.createphysic(x, y);
     }
 
+    // x/y are pixels (render space). Physics bodies live in scaled world
+    // units converted with toPhysics; rendering stays in pixels.
     createphysic(x: number, y: number) {
         const rb_desc = RigidBodyDesc.dynamic()
-            .setTranslation(x, y)
-            .setLinearDamping(0.5);
+            .setTranslation(toPhysics(x), toPhysics(y))
+            .setLinearDamping(BALL_LINEAR_DAMPING);
 
         this.rigid_body = this.world.createRigidBody(rb_desc);
 
-        const col_desc = ColliderDesc.ball(15).setRestitution(0.25);
+        const col_desc = ColliderDesc.ball(toPhysics(Ball.RADIUS_PX)).setRestitution(
+            0.25,
+        );
 
         this.world.createCollider(col_desc, this.rigid_body);
     }
@@ -61,11 +69,13 @@ export class Ball {
 
     updateballposition() {
         const position = this.rigid_body.translation();
-        this.container.setPosition(position.x, position.y);
+        this.container.setPosition(toPixels(position.x), toPixels(position.y));
     }
 
+    // x/y are pixels/second. Converted to world units so Rapier's
+    // velocity-norm cap (400 units/s) is never hit by intended shots.
     setVelocity(x: number, y: number) {
-        this.rigid_body.setLinvel({ x, y }, true);
+        this.rigid_body.setLinvel({ x: toPhysics(x), y: toPhysics(y) }, true);
     }
 }
 
