@@ -1,71 +1,84 @@
 import {
-    ColliderDesc,
-    RigidBody,
-    RigidBodyDesc,
-    World,
+  ColliderDesc,
+  RigidBody,
+  RigidBodyDesc,
+  World,
 } from "@dimforge/rapier2d-compat";
 import { Scene } from "phaser";
+import { BALL_LINEAR_DAMPING, toPhysics, toPixels } from "./shot";
 
 export class Ball {
-    world: World;
-    scene: Scene;
-    rigid_body: RigidBody;
-    container: Phaser.GameObjects.Container;
-    body: Phaser.GameObjects.Arc;
-    shadow: Phaser.GameObjects.Arc;
-    shine: Phaser.GameObjects.Arc;
+  static readonly RADIUS_PX = 15;
 
-    constructor(
-        scene: Scene,
-        world: World,
-        x: number,
-        y: number,
-        color: number = 0xe74c3c,
-    ) {
-        this.scene = scene;
-        this.world = world;
+  world: World;
+  scene: Scene;
+  rigid_body: RigidBody;
+  container: Phaser.GameObjects.Container;
+  body: Phaser.GameObjects.Arc;
+  shadow: Phaser.GameObjects.Arc;
+  shine: Phaser.GameObjects.Arc;
+  colorValue: number;
 
-        this.shadow = this.scene.add.circle(2, 3, 15, 0x000000, 0.22);
-        this.body = this.scene.add.circle(0, 0, 15, color);
-        this.body.setStrokeStyle(2, 0x000000, 0.3);
-        this.shine = this.scene.add.circle(-4, -5, 5, 0xffffff, 0.35);
+  constructor(
+    scene: Scene,
+    world: World,
+    x: number,
+    y: number,
+    color: number = 0xe74c3c,
+  ) {
+    this.scene = scene;
+    this.world = world;
+    this.colorValue = color;
 
-        this.container = this.scene.add.container(x, y, [
-            this.shadow,
-            this.body,
-            this.shine,
-        ]);
+    this.shadow = this.scene.add.circle(2, 3, Ball.RADIUS_PX, 0x000000, 0.22);
+    this.body = this.scene.add.circle(0, 0, Ball.RADIUS_PX, color);
+    this.body.setStrokeStyle(2, 0x000000, 0.3);
+    this.shine = this.scene.add.circle(-4, -5, 5, 0xffffff, 0.35);
 
-        this.createphysic(x, y);
-    }
+    this.container = this.scene.add.container(x, y, [
+      this.shadow,
+      this.body,
+      this.shine,
+    ]);
 
-    createphysic(x: number, y: number) {
-        const rb_desc = RigidBodyDesc.dynamic()
-            .setTranslation(x, y)
-            .setLinearDamping(0.5);
+    this.createphysic(x, y);
+  }
 
-        this.rigid_body = this.world.createRigidBody(rb_desc);
+  createphysic(x: number, y: number) {
+    const rb_desc = RigidBodyDesc.dynamic()
+      .setTranslation(toPhysics(x), toPhysics(y))
+      .setLinearDamping(BALL_LINEAR_DAMPING);
 
-        const col_desc = ColliderDesc.ball(15).setRestitution(0.25);
+    this.rigid_body = this.world.createRigidBody(rb_desc);
 
-        this.world.createCollider(col_desc, this.rigid_body);
-    }
+    const col_desc = ColliderDesc.ball(
+      toPhysics(Ball.RADIUS_PX),
+    ).setRestitution(1);
 
-    get x() {
-        return this.container.x;
-    }
+    this.world.createCollider(col_desc, this.rigid_body);
+  }
 
-    get y() {
-        return this.container.y;
-    }
+  get x() {
+    return this.container.x;
+  }
 
-    updateballposition() {
-        const position = this.rigid_body.translation();
-        this.container.setPosition(position.x, position.y);
-    }
+  get y() {
+    return this.container.y;
+  }
 
-    setVelocity(x: number, y: number) {
-        this.rigid_body.setLinvel({ x, y }, true);
-    }
+  updateballposition() {
+    const position = this.rigid_body.translation();
+    this.container.setPosition(toPixels(position.x), toPixels(position.y));
+  }
+
+  setVelocity(x: number, y: number) {
+    // x/y are pixels/second from Game/Bot
+    this.rigid_body.setLinvel(
+      {
+        x: toPhysics(x),
+        y: toPhysics(y),
+      },
+      true,
+    );
+  }
 }
-
