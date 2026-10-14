@@ -6,6 +6,7 @@ import { Ball } from "../ball";
 import { Board } from "./board";
 import { Stick } from "./stick";
 import { Bot } from "./Bot";
+import { toPhysics } from "../shot";
 
 export class Game extends Scene {
   cursor: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -112,16 +113,31 @@ export class Game extends Scene {
   deleteBall(index: number) {
     const ball = this.balls[index];
 
+    // WHITE BALL falls in hole
     if (ball === this.me) {
+      // put white back to start position
       ball.rigid_body.setTranslation(
-        { x: this.board.Line, y: this.scale.height / 2 },
+        {
+          x: toPhysics(this.board.Line),
+          y: toPhysics(this.scale.height / 2),
+        },
         true,
       );
+
+      // stop it
       ball.rigid_body.setLinvel({ x: 0, y: 0 }, true);
+
+      // move the visible ball too
+      ball.container.setPosition(this.board.Line, this.scale.height / 2);
+
+      // not a successful pot
+      this.pocketedBall = false;
       return;
     }
 
+    // normal ball pot
     this.world.removeRigidBody(ball.rigid_body);
+
     this.pocketedBall = true;
 
     if (this.isRed(ball)) {
@@ -133,7 +149,6 @@ export class Game extends Scene {
     ball.container.destroy();
     this.balls.splice(index, 1);
   }
-
   changePlayer() {
     EventBus.emit("change-player", {
       turn: this.currentPLayer,
