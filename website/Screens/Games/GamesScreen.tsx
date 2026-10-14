@@ -22,60 +22,85 @@ type Game = {
   image: string;
   available: boolean;
   detailsHref?: string;
+  color: string;
 };
 
 const GAMES: Game[] = [
   {
     slug: "snake",
-    title: "Snake",
+    title: "Hyper-Snake Protocol",
     description: "Classic snake game. Eat food, grow longer, avoid walls!",
     modes: ["Solo", "1v1"],
-    image: "/snake.png",
+    image: "/snakeGameImage2.png",
     available: true,
+    color: "#00D3FE",
   },
   {
     slug: "chess",
-    title: "Chess",
+    title: "Quantum Chess Arena",
     description: "The ultimate strategy game. Outthink your opponent.",
     modes: ["1v1"],
-    image: "/game-quantumchess-banner.png",
+    image: "/chessGameImage2.png",
     detailsHref: "/dashboard/games/chess/details",
     available: true,
+    color: "#7034D7",
+  },
+  {
+    slug: "tetris",
+    title: "Neon Tetris Blitz",
+    description: "Stack blocks, clear lines, beat your score!",
+    detailsHref: "/dashboard/games/tetris/details",
+    modes: ["Solo", "1v1"],
+    image: "/tetrisGameImage2.png",
+    available: true,
+    color: "#FFB800",
   },
   {
     slug: "checkers",
-    title: "Checkers",
+    title: "Checkers Rush",
     description:
-      "Tactical on-chain board game. Jump opponents, promote kings, and capture the board for GVT rewards!",
+    "Tactical on-chain board game. Jump opponents, promote kings, and capture the board for GVT rewards!",
     modes: ["Solo", "1v1"],
-    image: "/images/tactical-checkers-banner.png",
+    image: "/checkersGameImage.png",
     detailsHref: "/dashboard/games/checkers",
     available: true,
+    color: "#00D3FE",
+  },
+  {
+    slug: "bounce",
+    title: "Bounce King",
+    description: "Keep the ball bouncing. Avoid obstacles!",
+    modes: ["Solo", "1v1"],
+    image: "/bounceGameImage.png",
+    available: false,
+    color: "#00FF87",
+  },
+  {
+    slug: "scrabble",
+    title: "Scrabble Word Chain",
+    description: "Form words and score points. How many points can you make?",
+    modes: ["Solo", "1v1"],
+    image: "/scrabbleGameImage.png",
+    available: false,
+    color: "#FFB800",
+  },
+  {
+    slug: "mili-militia",
+    title: "Mili-Militia 2D",
+    description: "Jump between platforms. How high can you climb?",
+    modes: ["Solo", "1v1"],
+    image: "/miniMilitiaGameImage.png",
+    available: false,
+    color: "#FF3B30",
   },
   {
     slug: "jumping-jack",
     title: "Jumping Jack",
     description: "Jump between platforms. How high can you climb?",
     modes: ["Solo", "1v1"],
-    image: "/jumping-jack.png",
+    image: "/jumpingJackGameImage.png",
     available: false,
-  },
-  {
-    slug: "bounce",
-    title: "Bounce",
-    description: "Keep the ball bouncing. Avoid obstacles!",
-    modes: ["Solo", "1v1"],
-    image: "/bounce.png",
-    available: false,
-  },
-  {
-    slug: "tetris",
-    title: "Tetris",
-    description: "Stack blocks, clear lines, beat your score!",
-    detailsHref: "/dashboard/games/tetris/details",
-    modes: ["Solo", "1v1"],
-    image: "/tetris.png",
-    available: true,
+    color: "#FF3B30",
   },
 ];
 
@@ -102,7 +127,7 @@ function GameCard({
         />
         {!game.available && (
           <div className="absolute inset-0 bg-[#0d1326]/70 flex items-center justify-center">
-            <span className="px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-black uppercase tracking-widest backdrop-blur-sm">
+            <span className="px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-black uppercase tracking-widest bai-jamjuree-bold backdrop-blur-sm">
               Coming Soon
             </span>
           </div>
@@ -112,34 +137,44 @@ function GameCard({
       {/* Body */}
       <div className="flex flex-col gap-2.5 p-4 flex-1">
         {/* Title + mode badges */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <h2 className="text-[15px] font-black text-white">{game.title}</h2>
-          {game.modes.map((m) => (
-            <span
-              key={m}
-              className="px-2.5 py-0.5 rounded-full border border-[#00d2ff]/25 bg-[#00d2ff]/[0.06] text-[#00d2ff] text-[10px] font-black uppercase tracking-wide"
-            >
-              {m}
-            </span>
-          ))}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h2 className="text-[14px] bai-jamjuree-bold max-w-33 truncate text-white">{game.title}</h2>
+          <div className="flex items-center gap-0.5">
+            {game.modes.map((m) => (
+              <span
+                key={m}
+                className="px-2.5 py-0.5 rounded-full border border-olos-neon/25 bg-olos-neon/6 text-olos-neon text-[7px] font-black uppercase tracking-wide"
+              >
+                {m}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Description */}
-        <p className="text-gray-500 text-[12px] leading-relaxed flex-1">
+        <p className="text-gray-500 text-[10px] bai-jamjuree-medium leading-relaxed flex-1">
           {game.description}
         </p>
+      { 
+        game.available && (
+        <div className="flex items-center justify-between">
+          <h4 className="inter-normal text-[10px] text-[#A4B7EB]">MIN STAKE: 10 GVT</h4>
+          <h4 style={{color: game.color}} className="inter-bold text-[10px]">EVM ON-CHAIN</h4>
+        </div> )
+      }
 
         {/* Buttons */}
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2">
           {game.available ? (
             <>
               <Link
-                href={`/dashboard/games/${game.slug}`}
-                className="flex-1 py-2.5 rounded-xl bg-olos-blue hover:bg-olos-cobalt text-white text-[12px] font-black text-center transition-all active:scale-95 shadow-md shadow-blue-900/30"
+                href={game.detailsHref ?  `/dashboard/games/${game.slug}/details` : `/dashboard/games/${game.slug}`}
+                style={{ backgroundColor: game.color }}
+                className="flex-1 py-2 rounded-lg hover:brightness-130 text-[#02040A] text-[12px] font-black text-center transition-all active:scale-95 shadow-md shadow-blue-900/30 uppercase bai-jamjuree-bold"
               >
-                Practice
+                Play Now
               </Link>
-              {game.detailsHref ? (
+              {/* {game.detailsHref ? (
                 <Link
                   href={game.detailsHref}
                   className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-blue-500/20 hover:border-blue-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
@@ -163,22 +198,22 @@ function GameCard({
                     </button>
                   )}
                 </>
-              )}
+              )} */}
             </>
           ) : (
             <>
               <button
                 disabled
-                className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-gray-600 text-[12px] font-black text-center border border-white/[0.05] cursor-not-allowed"
+                className="flex-1 py-2 rounded-xl bg-white/[0.04] text-gray-600 text-[12px] font-black text-center border border-white/[0.05] cursor-not-allowed bai-jamjuree-bold uppercase"
               >
-                Practice
+                Not Available
               </button>
-              <button
+              {/* <button
                 disabled
                 className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-gray-600 text-[12px] font-black text-center border border-white/[0.05] cursor-not-allowed"
               >
                 1v1 Match
-              </button>
+              </button> */}
             </>
           )}
         </div>
