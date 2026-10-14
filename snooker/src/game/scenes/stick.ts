@@ -5,7 +5,6 @@ import RAPIER, {
     World,
 } from "@dimforge/rapier2d-compat";
 import { Scene } from "phaser";
-import { toPhysics } from "../shot";
 
 export class Stick {
     scene: Scene;
@@ -30,17 +29,12 @@ export class Stick {
     }
 
     stickBody() {
-        // x/y are pixels; scale to world units to match the ball/table
-        // bodies so the (visual-only) stick collider stays aligned.
         const stickBody = RigidBodyDesc.kinematicPositionBased().setTranslation(
-            toPhysics(this.x),
-            toPhysics(this.y),
+            this.x,
+            this.y,
         );
         this.stick_rb = this.world.createRigidBody(stickBody);
-        const stick_col = ColliderDesc.cuboid(
-            toPhysics(250),
-            toPhysics(4),
-        );
+        const stick_col = ColliderDesc.cuboid(250, 4);
         this.world.createCollider(stick_col, this.stick_rb);
     }
 

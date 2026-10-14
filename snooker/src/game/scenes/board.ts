@@ -1,6 +1,5 @@
 import RAPIER, { ColliderDesc, RigidBodyDesc } from "@dimforge/rapier2d-compat";
 import { GameObjects, Scene } from "phaser";
-import { toPhysics } from "../shot";
 
 export class Board {
     [x: string]: any;
@@ -40,17 +39,12 @@ export class Board {
         this.scene.add
             .rectangle(x, y, w + 30, h + 30, 0x70190d)
             .setDepth(10000000);
-        // x/y/w/h are pixels; the physics body uses scaled world units so
-        // the cushion occupies the same on-screen region as its visual.
-        const wall_desc = RigidBodyDesc.fixed().setTranslation(
-            toPhysics(x),
-            toPhysics(y),
-        );
+        const wall_desc = RigidBodyDesc.fixed().setTranslation(x, y);
         const wall_body = this.world.createRigidBody(wall_desc);
 
         const colliderDesc = RAPIER.ColliderDesc.cuboid(
-            toPhysics(w) / 2,
-            toPhysics(h) / 2,
+            w / 2,
+            h / 2,
         ).setRestitution(0.8);
 
         this.world.createCollider(colliderDesc, wall_body);
