@@ -8,6 +8,7 @@ import Matchmaking from "@/components/Matchmaking";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 
 // PvS is only wired up for the turn-based games with a System move selector.
 const PVS_GAME_SLUGS = ["checkers"];
@@ -22,60 +23,85 @@ type Game = {
   image: string;
   available: boolean;
   detailsHref?: string;
+  color: string;
 };
 
 const GAMES: Game[] = [
   {
     slug: "snake",
-    title: "Snake",
+    title: "Hyper-Snake Protocol",
     description: "Classic snake game. Eat food, grow longer, avoid walls!",
     modes: ["Solo", "1v1"],
-    image: "/snake.png",
+    image: "/snakeGameImage2.png",
     available: true,
+    color: "#00D3FE",
   },
   {
     slug: "chess",
-    title: "Chess",
+    title: "Quantum Chess Arena",
     description: "The ultimate strategy game. Outthink your opponent.",
     modes: ["1v1"],
-    image: "/game-quantumchess-banner.png",
+    image: "/chessGameImage2.png",
     detailsHref: "/dashboard/games/chess/details",
     available: true,
+    color: "#7034D7",
+  },
+  {
+    slug: "tetris",
+    title: "Neon Tetris Blitz",
+    description: "Stack blocks, clear lines, beat your score!",
+    detailsHref: "/dashboard/games/tetris/details",
+    modes: ["Solo", "1v1"],
+    image: "/tetrisGameImage2.png",
+    available: true,
+    color: "#FFB800",
   },
   {
     slug: "checkers",
-    title: "Checkers",
+    title: "Checkers Rush",
     description:
-      "Tactical on-chain board game. Jump opponents, promote kings, and capture the board for GVT rewards!",
+    "Tactical on-chain board game. Jump opponents, promote kings, and capture the board for GVT rewards!",
     modes: ["Solo", "1v1"],
-    image: "/images/tactical-checkers-banner.png",
+    image: "/checkersGameImage.png",
     detailsHref: "/dashboard/games/checkers",
     available: true,
+    color: "#00D3FE",
+  },
+  {
+    slug: "bounce",
+    title: "Bounce King",
+    description: "Keep the ball bouncing. Avoid obstacles!",
+    modes: ["Solo", "1v1"],
+    image: "/bounceGameImage.png",
+    available: false,
+    color: "#00FF87",
+  },
+  {
+    slug: "scrabble",
+    title: "Scrabble Word Chain",
+    description: "Form words and score points. How many points can you make?",
+    modes: ["Solo", "1v1"],
+    image: "/scrabbleGameImage.png",
+    available: false,
+    color: "#FFB800",
+  },
+  {
+    slug: "mili-militia",
+    title: "Mili-Militia 2D",
+    description: "Jump between platforms. How high can you climb?",
+    modes: ["Solo", "1v1"],
+    image: "/miniMilitiaGameImage.png",
+    available: false,
+    color: "#FF3B30",
   },
   {
     slug: "jumping-jack",
     title: "Jumping Jack",
     description: "Jump between platforms. How high can you climb?",
     modes: ["Solo", "1v1"],
-    image: "/jumping-jack.png",
+    image: "/jumpingJackGameImage.png",
     available: false,
-  },
-  {
-    slug: "bounce",
-    title: "Bounce",
-    description: "Keep the ball bouncing. Avoid obstacles!",
-    modes: ["Solo", "1v1"],
-    image: "/bounce.png",
-    available: false,
-  },
-  {
-    slug: "tetris",
-    title: "Tetris",
-    description: "Stack blocks, clear lines, beat your score!",
-    detailsHref: "/dashboard/games/tetris/details",
-    modes: ["Solo", "1v1"],
-    image: "/tetris.png",
-    available: true,
+    color: "#FF3B30",
   },
 ];
 
@@ -91,7 +117,7 @@ function GameCard({
   onSelectSystem: (game: Game) => void;
 }) {
   return (
-    <div className="group flex flex-col bg-[#0d1326] rounded-2xl border border-white/[0.07] overflow-hidden hover:border-blue-500/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-950/50">
+    <div className="group flex flex-col bg-[#0B0F19] rounded-2xl border border-[#FFFFFF1A] overflow-hidden hover:border-blue-500/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-950/50">
       {/* Image */}
       <div className="relative aspect-4/3 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -102,7 +128,7 @@ function GameCard({
         />
         {!game.available && (
           <div className="absolute inset-0 bg-[#0d1326]/70 flex items-center justify-center">
-            <span className="px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-black uppercase tracking-widest backdrop-blur-sm">
+            <span className="px-4 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-black uppercase tracking-widest cursor-not-allowed bai-jamjuree-bold backdrop-blur-sm">
               Coming Soon
             </span>
           </div>
@@ -112,34 +138,44 @@ function GameCard({
       {/* Body */}
       <div className="flex flex-col gap-2.5 p-4 flex-1">
         {/* Title + mode badges */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <h2 className="text-[15px] font-black text-white">{game.title}</h2>
-          {game.modes.map((m) => (
-            <span
-              key={m}
-              className="px-2.5 py-0.5 rounded-full border border-[#00d2ff]/25 bg-[#00d2ff]/[0.06] text-[#00d2ff] text-[10px] font-black uppercase tracking-wide"
-            >
-              {m}
-            </span>
-          ))}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h2 className="text-[14px] bai-jamjuree-bold max-w-33 truncate text-white">{game.title}</h2>
+          <div className="flex items-center gap-0.5">
+            {game.modes.map((m) => (
+              <span
+                key={m}
+                className="px-2.5 py-0.5 rounded-full border border-olos-neon/25 bg-olos-neon/6 text-olos-neon text-[7px] font-black uppercase tracking-wide"
+              >
+                {m}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Description */}
-        <p className="text-gray-500 text-[12px] leading-relaxed flex-1">
+        <p className="text-gray-500 text-[10px] bai-jamjuree-medium leading-relaxed flex-1">
           {game.description}
         </p>
+      { 
+        game.available && (
+        <div className="flex items-center justify-between">
+          <h4 className="inter-normal text-[10px] text-[#A4B7EB]">MIN STAKE: 10 GVT</h4>
+          <h4 style={{color: game.color}} className="inter-bold text-[10px]">EVM ON-CHAIN</h4>
+        </div> )
+      }
 
         {/* Buttons */}
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2">
           {game.available ? (
             <>
               <Link
-                href={`/dashboard/games/${game.slug}`}
-                className="flex-1 py-2.5 rounded-xl bg-olos-blue hover:bg-olos-cobalt text-white text-[12px] font-black text-center transition-all active:scale-95 shadow-md shadow-blue-900/30"
+                href={game.detailsHref ?  `/dashboard/games/${game.slug}/details` : `/dashboard/games/${game.slug}`}
+                style={{ backgroundColor: game.color }}
+                className="flex-1 py-2 rounded-lg hover:brightness-130 text-[#02040A] text-[12px] font-black text-center transition-all active:scale-95 shadow-md shadow-blue-900/30 uppercase bai-jamjuree-bold"
               >
-                Practice
+                Play Now
               </Link>
-              {game.detailsHref ? (
+              {/* {game.detailsHref ? (
                 <Link
                   href={game.detailsHref}
                   className="flex-1 py-2.5 rounded-xl bg-[#161e36] hover:bg-[#1d2848] border border-blue-500/20 hover:border-blue-500/40 text-white text-[12px] font-black text-center transition-all active:scale-95"
@@ -163,22 +199,22 @@ function GameCard({
                     </button>
                   )}
                 </>
-              )}
+              )} */}
             </>
           ) : (
             <>
               <button
                 disabled
-                className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-gray-600 text-[12px] font-black text-center border border-white/[0.05] cursor-not-allowed"
+                className="flex-1 py-2 rounded-xl bg-white/4 text-gray-600 text-[12px] font-black text-center border border-white/5  cursor-not-allowed bai-jamjuree-bold uppercase"
               >
-                Practice
+                Not Available
               </button>
-              <button
+              {/* <button
                 disabled
                 className="flex-1 py-2.5 rounded-xl bg-white/[0.04] text-gray-600 text-[12px] font-black text-center border border-white/[0.05] cursor-not-allowed"
               >
                 1v1 Match
-              </button>
+              </button> */}
             </>
           )}
         </div>
@@ -263,8 +299,8 @@ export default function GamesScreen() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B1121] text-white">
-      <div className="max-w-[1567px] mx-auto px-8 lg:px-16 pb-28">
+    <main className="min-h-screen text-white">
+      <div className="max-w-391.75 mx-auto px-8 lg:px-16 pb-28">
         {matchmakingActive && selectedGameForStake ? (
           <div className="flex flex-col items-center">
             <Matchmaking
@@ -303,7 +339,7 @@ export default function GamesScreen() {
           </div>
         ) : selectedGameForStake ? (
           <div className="flex flex-col items-center animate-fade-in">
-            <div className="w-full max-w-[560px] mb-8">
+            <div className="w-full max-w-140 mb-8">
               <button
                 onClick={() => setSelectedGameForStake(null)}
                 className="text-gray-500 hover:text-white transition-colors text-sm font-bold flex items-center gap-2"
@@ -320,9 +356,23 @@ export default function GamesScreen() {
         ) : (
           <>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end gap-6 mb-8 pt-6">
-              <div>
-                <p className="text-[#00d2ff] text-[11px] font-black uppercase tracking-[0.4em] mb-2">
+            <div className="flex flex-col w-full bg-[#060A16] p-6 mt-3 gap-1">
+              <div className="flex items-center gap-2 bg-[#7034D71F] border w-fit border-[#7034D7] rounded-3xl px-3 py-1">
+                <div className="w-1.5 h-1.5 bg-[#00FF87] rounded-full"></div>
+                <h4 className="bai-jamjuree-bold text-white text-[9px]">FEATURED ARENA PRO</h4>
+              </div>
+              <h2 className="bai-jamjuree-bold text-white text-[36px]">Hyper-Snake Protocol <span className="text-[#00D3FE]">Season 2</span></h2>
+              <p className="text-[#A4B7EB] text-[12px] inter-extralight max-w-94">
+                The classic arcade game transformed into a Web3 competitive playground. Stake GVT tokens, build high scores, trap opponents, and claim the entire pot instantly.
+              </p>
+              <Link href="/dashboard/games/snake" className="flex items-center gap-2 bg-[#00D3FE] hover:bg-[#00D3FE]/90 transition-all duration-200 rounded-xl px-4 py-2 w-fit mt-4">
+                <Image src="/padIcon.png" alt="pad icon" width={40} height={40} />
+                <span className="text-[#02040A] text-[13px] font-black uppercase tracking-wide bai-jamjuree-bold">Play Now</span>
+              </Link>
+            </div>
+            <div className="flex flex-col sm:flex-row justify-center sm:items-end gap-6 mb-6 pt-6">
+              {/* <div>
+                <p className="text-olos-neon text-[11px] font-black uppercase tracking-[0.4em] mb-2">
                   Olos Gaming
                 </p>
                 <h1 className="text-5xl font-black tracking-tight text-white leading-none">
@@ -331,20 +381,22 @@ export default function GamesScreen() {
                 <p className="text-gray-500 text-sm font-medium mt-2">
                   Choose a game to play or compete
                 </p>
-              </div>
+              </div> */}
+
+              <h3 className="bai-jamjuree-bold text-[20px]">ALL ARENAS</h3>
 
               {/* Filter toggle */}
-              <div className="sm:ml-auto flex items-center gap-1 bg-white/[0.04] border border-white/[0.07] rounded-xl p-1">
+              <div className="sm:ml-auto flex items-center gap-1 bg-white/4 border border-white/7 rounded-xl p-1">
                 {FILTERS.map((f) => {
                   const active = filter === f;
                   return (
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
-                      className={`px-5 py-2 rounded-lg text-[13px] font-black uppercase tracking-wide transition-all duration-200 ${
+                      className={`px-5 py-2 rounded-lg text-[9px] bai-jamjuree-medium uppercase tracking-wide transition-all duration-200 ${
                         active
                           ? "bg-olos-blue text-white shadow-lg shadow-blue-900/40"
-                          : "text-gray-400 hover:text-white hover:bg-white/[0.06]"
+                          : "text-gray-400 hover:text-white hover:bg-white/6"
                       }`}
                     >
                       {f}
@@ -355,15 +407,58 @@ export default function GamesScreen() {
             </div>
 
             {/* Game Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 animate-fade-in-up">
-              {visible.map((game) => (
-                <GameCard
-                  key={game.slug}
-                  game={game}
-                  onSelect1v1={handleSelect1v1}
-                  onSelectSystem={handleSelectSystem}
-                />
-              ))}
+            <div className="flex gap-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5 animate-fade-in-up">
+                {visible.map((game) => (
+                  <GameCard
+                    key={game.slug}
+                    game={game}
+                    onSelect1v1={handleSelect1v1}
+                    onSelectSystem={handleSelectSystem}
+                  />
+                ))}
+              </div>
+              <div className="w-120 flex flex-col gap-4">
+                <div className="flex flex-col gap-2 p-4 bg-[#060A16] border border-[#FFFFFF1A] rounded-2xl">
+                  <h3 className="bai-jamjuree-bold text-[14px] text-white">YOUR WEB3 STATS</h3>
+                  <div className="flex items-center justify-between">
+                    <h4 className="uppercase inter-light text-[#A4B7EB] text-[11px]">Total Matches</h4>
+                    <h4 className="text-[11px] inter-bold text-white">48</h4>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <h4 className="uppercase inter-light text-[#A4B7EB] text-[11px]">Win rate</h4>
+                    <h4 className="text-[11px] inter-bold text-[#00FF87]">68.4%</h4>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <h4 className="uppercase inter-light text-[#A4B7EB] text-[11px]">Claimed Rewards</h4>
+                    <h4 className="text-[10px] inter-bold text-[#FFB800] uppercase">350 gvt</h4>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3 p-4 bg-[#060A16] border border-[#FFFFFF1A] rounded-2xl">
+                  <h3 className="bai-jamjuree-bold text-[14px] text-white">RECENT BATTLES</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-0">
+                      <h4 className="inter-bold text-white text-[11px]">Snake</h4>
+                      <h5 className="text-[7px] inter-extralight text-[#00FF87]">VICTORY</h5>
+                    </div>
+                    <h4 className="text-[11px] inter-bold text-[#00FF87]">+19.0 GVT</h4>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-0">
+                      <h4 className="inter-bold text-white text-[11px]">Chess</h4>
+                      <h5 className="text-[7px] inter-extralight text-[#FF3B30]">DEFEAT</h5>
+                    </div>
+                    <h4 className="text-[11px] inter-bold text-[#FF3B30]">-10.0 GVT</h4>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-0">
+                      <h4 className="inter-bold text-white text-[11px]">Tetris</h4>
+                      <h5 className="text-[7px] inter-extralight text-[#00FF87]">VICTORY</h5>
+                    </div>
+                    <h4 className="text-[11px] inter-bold text-[#00FF87]">+47.5 GVT</h4>
+                  </div>
+                </div>
+              </div>
             </div>
           </>
         )}
