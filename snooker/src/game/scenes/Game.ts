@@ -189,7 +189,7 @@ export class Game extends Scene {
 
     this.botWaiting = true;
 
-    this.time.delayedCall(800, () => {
+    this.time.delayedCall(1000, () => {
       this.bot.pullBackAndShoot(() => {
         this.isBeenShot = true;
         this.botWaiting = false;
