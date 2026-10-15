@@ -1,8 +1,4 @@
-import RAPIER, {
-  ColliderDesc,
-  RigidBodyDesc,
-  World,
-} from "@dimforge/rapier2d-compat";
+import RAPIER, { RigidBodyDesc, World } from "@dimforge/rapier2d-compat";
 import { Scene } from "phaser";
 
 export class Stick {
@@ -98,13 +94,13 @@ export class Stick {
   }
 
   stickBody() {
+    // Kinematic rigid body without any colliders attached
+    // This stops the stick from physically bumping into balls when aim tracking
     const stickBody = RigidBodyDesc.kinematicPositionBased().setTranslation(
       this.x,
       this.y,
     );
     this.stick_rb = this.world.createRigidBody(stickBody);
-    const stick_col = ColliderDesc.cuboid(250, 4);
-    this.world.createCollider(stick_col, this.stick_rb);
   }
 
   Aimat(tipX: number, tipY: number, angle: number) {

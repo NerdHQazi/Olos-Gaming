@@ -56,7 +56,7 @@ export class Board {
   }
 
   createHoles(w: number, h: number) {
-    const radius = 20;
+    const radius = 25;
     const daimeter = radius + radius / 6;
 
     // holes stay in pixels because Game distance checks use ball.x/ball.y pixels

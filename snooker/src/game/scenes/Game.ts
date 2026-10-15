@@ -30,7 +30,6 @@ export class Game extends Scene {
   isBeenShot = false;
   bot: Bot;
   pocketedBall = false;
-  nextTarget: "red" | "colour" = "red";
   botWaiting = false;
   forceText: GameObjects.Text;
 
@@ -140,15 +139,10 @@ export class Game extends Scene {
 
     this.pocketedBall = true;
 
-    if (this.isRed(ball)) {
-      this.nextTarget = "colour";
-    } else {
-      this.nextTarget = "red";
-    }
-
     ball.container.destroy();
     this.balls.splice(index, 1);
   }
+
   changePlayer() {
     EventBus.emit("change-player", {
       turn: this.currentPLayer,
