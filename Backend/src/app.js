@@ -7,6 +7,12 @@ const YAML = require('yaml');
 const fs = require('fs');
 const path = require('path');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const matchRoutes = require('./routes/matchRoutes');
+const leaderboardRoutes = require('./routes/leaderboardRoutes');
+const marketplaceRoutes = require('./routes/marketplaceRoutes');
+const guildRoutes = require('./routes/guildRoutes');
+const tournamentRoutes = require('./routes/tournamentRoutes');
 const internalRoutes = require('./routes/internalRoutes');
 
 // Load OpenAPI spec once at startup
@@ -57,6 +63,12 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/matches', matchRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/guilds', guildRoutes);
+app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/_internal', internalRoutes);
 
 // API Documentation — Swagger UI
