@@ -16,6 +16,7 @@ import {
   X,
   Club,
   LogOut,
+  Video,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -52,16 +53,22 @@ const navigation = [
     active: true,
   },
   {
+    label: "Tournaments",
+    href: "/dashboard/tournaments",
+    icon: Trophy,
+    color: "white",
+  },
+  {
     label: "Leaderboard",
     href: "/dashboard/leaderboard",
     icon: Trophy,
     color: "gold",
   },
   {
-    label: "Tournaments",
-    href: "/dashboard/tournaments",
-    icon: Trophy,
-    color: "gold",
+    label: "Streaming",
+    href: "/dashboard/streaming",
+    icon: Video,
+    color: "white",
   },
   {
     label: "NFTs",
@@ -214,7 +221,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
           </div>
 
-          <div className="flex flex-1 flex-col overflow-y-auto px-3 py-5 justify-between">
+          <div className="flex flex-1 flex-col overflow-y-auto px-3 pt-2 pb-5 justify-between">
             <nav className="space-y-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
