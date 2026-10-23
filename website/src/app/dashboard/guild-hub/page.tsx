@@ -10,6 +10,7 @@ import {
   type Guild,
 } from './guildHub.mock'
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function GuildHubPage() {
   const [query, setQuery] = useState("");
@@ -67,8 +68,11 @@ export default function GuildHubPage() {
 }
 
 function FeaturedGuildBanner({ guild }: { guild: Guild }) {
+
+  const router = useRouter();
+
   return (
-    <div className="rounded-xl border border-[#20CEEE] bg-[#20CEEE]/5 px-6 py-5 flex items-center justify-between gap-6 max-md:flex-col max-md:items-start">
+    <div onClick={() => router.push(`/dashboard/guild-hub/${guild.id}/profile`)} className="rounded-xl border border-[#20CEEE] bg-[#20CEEE]/5 px-6 py-5 flex items-center justify-between gap-6 max-md:flex-col max-md:items-start cursor-pointer">
       <div className="flex items-center gap-4 max-sm:flex-col max-sm:items-start">
         <div className="relative w-29 h-29 rounded-lg overflow-hidden bg-white shrink-0 max-sm:w-20 max-sm:h-20">
           <Image src={guild.iconUrl} alt={guild.name} fill className="object-contain p-1" />
@@ -106,7 +110,11 @@ function FeaturedGuildBanner({ guild }: { guild: Guild }) {
           </div>
         </div>
       </div>
-      <Link href={`/dashboard/guild-hub/${guild.id}/apply`} className="shrink-0 rounded-md bg-[#20CEEE] px-6 py-2.5 text-[12px] inter-bold text-[#050810] hover:opacity-90 transition-opacity max-md:w-full max-md:text-center">
+      <Link 
+        href={`/dashboard/guild-hub/${guild.id}/apply`}
+        onClick={(e) => e.stopPropagation()} 
+        className="shrink-0 rounded-md bg-[#20CEEE] px-6 py-2.5 text-[12px] inter-bold text-[#050810] hover:opacity-90 transition-opacity max-md:w-full max-md:text-center"
+      >
         Join Guild
       </Link>
     </div>
@@ -114,8 +122,11 @@ function FeaturedGuildBanner({ guild }: { guild: Guild }) {
 }
 
 function GuildCard({ guild }: { guild: Guild }) {
+
+   const router = useRouter();
+
   return (
-    <div className="rounded-lg border border-[#2A1060] bg-slate-900/40 p-4 flex flex-col gap-3">
+    <div onClick={() => router.push(`/dashboard/guild-hub/${guild.id}/profile`)} className="rounded-lg border border-[#2A1060] bg-slate-900/40 p-4 flex flex-col gap-3 cursor-pointer">
       <div className="flex items-center gap-3">
         <div className="relative w-15 h-15 rounded-md overflow-hidden bg-slate-800 shrink-0">
           <Image src={guild.iconUrl} alt={guild.name} fill className="object-cover" />
@@ -148,7 +159,11 @@ function GuildCard({ guild }: { guild: Guild }) {
         ))}
       </div>
 
-      <Link href={`/dashboard/guild-hub/${guild.id}/apply`} className="w-full flex justify-center rounded-md border border-[#20CEEE] py-2 text-[11px] inter-bold text-[#20CEEE] hover:bg-[#20CEEE]/10 transition-colors">
+      <Link 
+        href={`/dashboard/guild-hub/${guild.id}/apply`} 
+        onClick={(e) => e.stopPropagation()}
+        className="w-full flex justify-center rounded-md border border-[#20CEEE] py-2 text-[11px] inter-bold text-[#20CEEE] hover:bg-[#20CEEE]/10 transition-colors"
+      >
         Apply to Join
       </Link>
     </div>
