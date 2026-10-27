@@ -191,7 +191,7 @@ export class Game extends Scene {
     });
   }
 
-  update(time: number, delta: number): void {
+  update(_time: number, _delta: number): void {
     if (this.balls.length === 0) return;
 
     if (!this.isBeenShot) {

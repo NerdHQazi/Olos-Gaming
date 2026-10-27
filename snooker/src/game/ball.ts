@@ -51,9 +51,9 @@ export class Ball {
 
     this.rigid_body = this.world.createRigidBody(rb_desc);
 
-    const col_desc = ColliderDesc.ball(
-      toPhysics(Ball.RADIUS_PX),
-    ).setRestitution(1);
+    const col_desc = ColliderDesc.ball(toPhysics(Ball.RADIUS_PX))
+      .setRestitution(0.5)
+      .setFriction(0.2);
 
     this.world.createCollider(col_desc, this.rigid_body);
   }

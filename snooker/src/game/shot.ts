@@ -34,7 +34,7 @@ export const MAX_SHOT_SPEED = 1600;
 export const ENGINE_VELOCITY_CAP = 400;
 // Rapier linear damping for balls. Settles a full-power free roll in ~6s;
 // collisions shorten this in practice. (0.5 left balls creeping ~9s.)
-export const BALL_LINEAR_DAMPING = 1.0;
+export const BALL_LINEAR_DAMPING = 1.3;
 // A ball slower than this (px/s) is snapped to a full stop: 8px/s is
 // ~0.13px per frame, i.e. imperceptible, so this never freezes visible
 // motion but guarantees balls (and the turn handoff) settle crisply.
