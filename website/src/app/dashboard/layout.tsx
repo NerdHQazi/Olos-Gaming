@@ -19,7 +19,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { RiCoinsFill } from "react-[#20ceee]";
+import { RiCoinsFill } from "react-icons/ri";
 import { FaEthereum } from "react-icons/fa";
 import { ConnectWalletButton } from "@/components/ConnectWalletButton";
 import { useAppKitAccount } from "@reown/appkit/react";
