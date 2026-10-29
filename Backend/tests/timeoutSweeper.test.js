@@ -7,6 +7,9 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ||
 process.env.INTERNAL_DEBUG_TOKEN = 'test-internal-secret-token';
 process.env.NODE_ENV = 'test';
 
+const savedSweeperToken = process.env.INTERNAL_SWEEPER_TOKEN;
+const savedDebugToken = process.env.INTERNAL_DEBUG_TOKEN;
+
 const supabase = require('../src/config/supabase');
 const app = require('../src/app');
 const matchSweeper = require('../src/services/matchSweeper');
@@ -25,10 +28,26 @@ function startServer() {
 }
 
 test('Phase 4 Match Timeout Sweeper & Disconnect Authority Suite', async (t) => {
+  // Isolate environment for this suite to avoid interference from local .env values
+  delete process.env.INTERNAL_SWEEPER_TOKEN;
+  process.env.INTERNAL_DEBUG_TOKEN = 'test-internal-secret-token';
+
   const { server, baseUrl } = await startServer();
   const originalRpc = supabase.rpc;
 
   t.after(() => {
+    // Restore environment variables to prevent cross-test side effects
+    if (savedSweeperToken !== undefined) {
+      process.env.INTERNAL_SWEEPER_TOKEN = savedSweeperToken;
+    } else {
+      delete process.env.INTERNAL_SWEEPER_TOKEN;
+    }
+    if (savedDebugToken !== undefined) {
+      process.env.INTERNAL_DEBUG_TOKEN = savedDebugToken;
+    } else {
+      delete process.env.INTERNAL_DEBUG_TOKEN;
+    }
+
     supabase.rpc = originalRpc;
     matchSweeper.stopSweeper();
     server.close();
@@ -279,6 +298,50 @@ test('Phase 4 Match Timeout Sweeper & Disconnect Authority Suite', async (t) => 
         delete process.env.INTERNAL_SWEEPER_TOKEN;
       }
     }
+  });
+
+  await t.test('POST /api/_internal/sweep-expired-matches: isolates failures and reports telemetry for both successful and failed matches', async () => {
+    supabase.rpc = async (fnName, args) => {
+      assert.equal(fnName, 'sweep_expired_matches');
+      return {
+        data: {
+          status: 'success',
+          swept_count: 2,
+          failed_count: 1,
+          disconnect_forfeits: 1,
+          turn_timeouts: 1,
+          terminal_resolutions: 0,
+          first_move_abandonments: 0,
+          swept_match_ids: ['healthy-uuid-1', 'healthy-uuid-2'],
+          failed_matches: [
+            {
+              match_id: 'bad-uuid-1',
+              clause: 'abandoned_first_move',
+              error: 'Player 1 locked balance insufficient for refund (user: usr-1, locked: 40, required: 50)'
+            }
+          ]
+        },
+        error: null
+      };
+    };
+
+    const res = await fetch(`${baseUrl}/api/_internal/sweep-expired-matches`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-token': 'test-internal-secret-token'
+      },
+      body: JSON.stringify({ batchLimit: 50 })
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.swept_count, 2);
+    assert.equal(body.failed_count, 1);
+    assert.deepEqual(body.swept_match_ids, ['healthy-uuid-1', 'healthy-uuid-2']);
+    assert.equal(body.failed_matches.length, 1);
+    assert.equal(body.failed_matches[0].match_id, 'bad-uuid-1');
   });
 
   await t.test('sweepOnce: catches and handles thrown exceptions safely', async () => {

@@ -41,6 +41,10 @@ const sweepOnce = async (batchLimit = 25) => {
       });
     }
 
+    if (data?.failed_count > 0) {
+      console.warn(`[MatchSweeper] Batch completed with ${data.failed_count} unresolvable matches:`, data.failed_matches);
+    }
+
     return {
       success: true,
       data

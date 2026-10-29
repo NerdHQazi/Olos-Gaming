@@ -22,6 +22,10 @@ const openApiSpec = YAML.parse(
 
 const app = express();
 
+// Trust the first reverse-proxy hop (e.g. Render / Cloudflare) to ensure accurate client IP
+// detection for rate limiting and logging while preventing client-spoofed X-Forwarded-For headers.
+app.set('trust proxy', 1);
+
 // Simple Request Logging
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -49,17 +53,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Health check (mounted before general /api/ rate limiting to prevent prober throttling)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 });
 app.use('/api/', limiter);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
-});
 
 // Routes
 app.use('/api/auth', authRoutes);
