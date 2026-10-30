@@ -1,4 +1,4 @@
-/* Wooden board: all CSS gradients — no images, no WebGL. */
+/* Wooden board: square colours + grain are baked into /chess/board.webp */
 
 /* ── Frame ─────────────────────────────────────── */
 .frame {
@@ -11,7 +11,9 @@
   background-color: #3a1a0a;
   background-size: 100% 100%;
   background-repeat: no-repeat;
-  box-shadow: 0 24px 46px rgba(0, 0, 0, 0.6);
+  box-shadow:
+    0 24px 46px rgba(0, 0, 0, 0.6),
+    0 2px 0 rgba(255, 255, 255, 0.06) inset;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -24,29 +26,20 @@
   grid-template-rows: repeat(8, 1fr);
   width: 100%;
   height: 100%;
-  }
+}
 
 /* ── Squares ───────────────────────────────────── */
 .sq {
-  --ang: 92deg;
-  --off: 0px;
   position: relative;
   display: block;
   padding: 0;
   margin: 0;
   border: 0;
   border-radius: 0;
+  background: transparent;
   font: inherit;
   cursor: default;
 }
-.v0 { --ang: 92deg; --off: 0px; }
-.v1 { --ang: 88deg; --off: 3px; }
-.v2 { --ang: 95deg; --off: 6px; }
-.v3 { --ang: 85deg; --off: 1px; }
-
-/* square colours + grain are baked into /chess/board.webp */
-.sqLight,
-.sqDark { background: transparent; }
 
 .clickable { cursor: pointer; }
 .sq:focus-visible { outline: 2px solid #20ceee; outline-offset: -2px; z-index: 3; }
@@ -60,35 +53,42 @@
   inset: 0;
   pointer-events: none;
 }
-.lastMove::before { background: rgba(32, 206, 238, 0.28); }
-.selected::before { background: rgba(234, 179, 8, 0.5); }
-.check::before { background: radial-gradient(circle, rgba(239, 68, 68, 0.85), rgba(239, 68, 68, 0.25) 70%); }
+.lastMove::before { background: rgba(32, 206, 238, 0.22); }
+.selected::before {
+  background: rgba(234, 179, 8, 0.45);
+  box-shadow: inset 0 0 0 0.3cqw rgba(234, 179, 8, 0.9);
+}
+.check::before {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.9), rgba(239, 68, 68, 0.25) 70%);
+}
+
+/* legal-move marker: dark ring + cyan core so it reads on light AND dark wood */
 .target::after {
   content: '';
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 24%;
-  height: 24%;
+  width: 22%;
+  height: 22%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: #20ceee;
-  box-shadow: 0 0 0 0.35cqw rgba(32, 206, 238, 0.25);
+  box-shadow: 0 0 0 0.3cqw rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
 .capture::after {
-  width: 86%;
-  height: 86%;
+  width: 88%;
+  height: 88%;
   background: transparent;
-  border: 0.55cqw solid rgba(32, 206, 238, 0.9);
-  box-shadow: none;
+  border: 0.5cqw solid rgba(32, 206, 238, 0.95);
+  box-shadow: 0 0 0 0.25cqw rgba(0, 0, 0, 0.3), inset 0 0 0 0.25cqw rgba(0, 0, 0, 0.3);
 }
 
-/* rank numbers (left) and file letters (bottom), as in the reference */
+/* rank numbers (left) and file letters (bottom) */
 .rank,
 .file {
   position: absolute;
-  font-size: 1.7cqw;
+  font-size: 1.9cqw;
   font-weight: 700;
   line-height: 1;
   pointer-events: none;
@@ -118,81 +118,59 @@
   pointer-events: none;
 }
 .hop { position: relative; width: 100%; height: 100%; }
-/* .lift {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-origin: 50% 90%;
-  transition: transform 180ms ease-out;
-  animation: popIn 320ms ease-out both;
-} */
+
 .lift {
   position: relative;
   width: 100%;
   height: 100%;
-  transform-origin: 50% 90%;
+  transform-origin: 50% 80%;
   transition: transform 180ms ease-out;
-  /* No popIn animation: prevents newly mounted/reconciled pieces from bouncing. */
 }
-/* .liftOn { transform: translateY(-9%) scale(1.06); } */
-/* .liftOn {
-  transform: translateY(-6%) scale(1.035);
-} */
-.liftOn {
-  transform: translateY(-4%) scale(1.025);
+.liftOn { transform: translateY(-4%) scale(1.03); }
+
+/* Contact shadow on the board, under the base of the piece */
+.lift::before {
+  content: '';
+  position: absolute;
+  left: 20%;
+  width: 60%;
+  top: 62%;
+  height: 20%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0) 70%);
+  pointer-events: none;
 }
 
-/* sprite is 256x470; its base centre sits at 400/470 of the image height.
-   Drawn at 90% of the cell width, top:-68.6% puts the base centre ~72% down the square. */
-/* .art {
-  position: absolute;
-  left: 5%;
-  top: -68.6%;
-  width: 90%;
-  height: auto;
-  display: block;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-drag: none;
-} */
-
-/* .art {
-  position: absolute;
-  left: 11%;
-  top: -50%;
-  width: 78%;
-  height: auto;
-
-  display: block;
-  object-fit: contain;
-  object-position: center bottom;
-
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-drag: none;
-} */
+/*
+  Sprite is 256x470 and the centre of its base is at 400/470 (85.1%) of its height.
+  Height in cells  = --w * 470/256            = --w * 1.836
+  Base centre      = 0.851 * height           = --w * 1.563
+  We want the base centre at --base (fraction of a cell) down the square, so
+    top  = --base - --w * 1.563
+    left = (1 - --w) / 2
+  Tweak --w (size), --base (how low the piece sits) and --dy (per-colour nudge).
+*/
 .art {
+  --w: 0.68;
+  --base: 0.74;
+  --dy: 0;
   position: absolute;
-  height: auto;
   display: block;
+  width: calc(var(--w) * 100%);
+  height: auto;
+  left: calc((1 - var(--w)) * 50%);
+  top: calc((var(--base) - var(--w) * 1.563 + var(--dy)) * 100%);
   object-fit: contain;
   object-position: center bottom;
+  filter: drop-shadow(0 0.15cqw 0.2cqw rgba(0, 0, 0, 0.35));
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
 }
 
-.artBlack {
-  left: 7%;
-  top: -62.4%;
-  width: 86%;
-}
-
-.artWhite {
-  left: 4%;
-  top: -71.8%;
-  width: 92%;
-}
+/* black sprites were framed ~9% higher than white; nudge until the two rows line up */
+.artWhite { --dy: 0; }
+.artBlack { --dy: 0.05; }
 
 /* captured piece animating out */
 .ghost {
@@ -212,10 +190,6 @@
   animation: ghostOut 380ms ease-in 200ms forwards;
 }
 
-@keyframes popIn {
-  from { opacity: 0; transform: scale(0.7); }
-  to { opacity: 1; transform: scale(1); }
-}
 @keyframes ghostOut {
   to { opacity: 0; transform: translateY(-30%) scale(0.2) rotate(25deg); }
 }
