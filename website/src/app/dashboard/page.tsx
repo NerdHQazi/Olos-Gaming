@@ -44,7 +44,7 @@ const GAMES: Game[] = [
     modes: ["Solo", "1v1"],
     players: "1,920",
     rating: 4.8,
-    image: "/images/game-snake-featured.png",
+    image: "/images/snake/snake-logo.png",
     available: true,
     description: "Classic snake on-chain. Eat, grow, survive — last snake standing wins the pool.",
   },

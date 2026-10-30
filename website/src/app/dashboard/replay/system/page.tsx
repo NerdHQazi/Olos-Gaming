@@ -56,7 +56,7 @@ export default function ReplaySystemPage() {
             <span>Duration: <strong className="text-slate-200">08:46</strong></span>
           </div>
           <Link
-            href="/replay/viewport"
+            href="/dashboard/replay/viewport"
             className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs transition"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
@@ -131,7 +131,7 @@ export default function ReplaySystemPage() {
                 <td className="p-4 text-slate-400">{row.duration}</td>
                 <td className="p-4 text-right">
                   <Link
-                    href="/replay/viewport"
+                    href="/dashboard/replay/viewport"
                     className="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium text-[11px] transition inline-block"
                   >
                     Watch

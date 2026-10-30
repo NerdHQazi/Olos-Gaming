@@ -105,13 +105,13 @@ export default function ReplayLibraryPage() {
 
               <div className="grid grid-cols-2 gap-2 pb-5 pt-1">
                 <Link
-                  href="/replay/editor"
+                  href="/dashboard/replay/editor"
                   className="py-2 text-center rounded-lg bg-purple-600/20 border border-purple-500/40 text-purple-300 font-bold text-xs hover:bg-purple-600/30 transition"
                 >
                   Analyze
                 </Link>
                 <Link
-                  href="/replay/viewport"
+                  href="/dashboard/replay/viewport"
                   className="py-2 text-center rounded-lg bg-cyan-400 text-slate-950 font-bold text-xs hover:bg-cyan-300 transition"
                 >
                   Watch

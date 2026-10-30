@@ -194,6 +194,7 @@ export default function SnakeScreen() {
     alive: true,
     started: false,
     opponentScore: 0,
+    paused: false,
     p1_time: 600,
     p2_time: 600,
   });
@@ -203,6 +204,7 @@ export default function SnakeScreen() {
   const [p1Time, setP1Time] = useState(600);
   const [p2Time, setP2Time] = useState(600);
   const [alive, setAlive] = useState(true);
+  const [paused, setPaused] = useState(false);
   const [started, setStarted] = useState(false);
   const [respawnTimer, setRespawnTimer] = useState(0);
   const [matchStatus, setMatchStatus] = useState<"active" | "finished">(
@@ -373,8 +375,19 @@ export default function SnakeScreen() {
     s.started = true;
     setScore(0);
     setAlive(true);
+    s.paused = false;
+    setPaused(false);
     setStarted(true);
   }, [randomFood, mode]);
+
+  // Pause / resume (practice mode only: in 1v1 the match clock runs on the server)
+  const togglePause = useCallback(() => {
+    if (mode === "1v1") return;
+    const s = stateRef.current;
+    if (!s.started || !s.alive) return;
+    s.paused = !s.paused;
+    setPaused(s.paused);
+  }, [mode]);
 
   // Draws one frame. Called ~60 times a second by the animation loop below.
   const draw = useCallback(() => {
@@ -411,12 +424,26 @@ export default function SnakeScreen() {
         H / 2,
       );
     }
+
+    // Paused overlay
+    if (s.paused) {
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 32px Outfit, sans-serif";
+      ctx.fillText("PAUSED", W / 2, H / 2 - 8);
+      ctx.font = "14px Outfit, sans-serif";
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.fillText("Press Space or P to resume", W / 2, H / 2 + 20);
+    }
   }, [mode]);
 
   const tick = useCallback(async () => {
     const s = stateRef.current;
     if (
       !s.alive ||
+      s.paused ||
       (!s.started && mode !== "1v1") ||
       matchStatus === "finished"
     )
@@ -553,6 +580,12 @@ export default function SnakeScreen() {
       if (e.code === "Space") {
         e.preventDefault();
         if (!s.started || !s.alive) reset();
+        else togglePause();
+        return;
+      }
+
+      if (e.code === "KeyP") {
+        togglePause();
         return;
       }
 
@@ -583,7 +616,20 @@ export default function SnakeScreen() {
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [reset]);
+  }, [reset, togglePause]);
+
+  // Auto-pause when the player switches tab or window (practice mode only)
+  useEffect(() => {
+    const onHide = () => {
+      const s = stateRef.current;
+      if (document.hidden && mode !== "1v1" && s.started && s.alive && !s.paused) {
+        s.paused = true;
+        setPaused(true);
+      }
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, [mode]);
 
   const handleForfeit = async () => {
     if (!matchId || !user) return;
@@ -915,6 +961,15 @@ export default function SnakeScreen() {
               </svg>
               Cancel Game
             </button>
+            {mode !== "1v1" && (
+              <button
+                onClick={togglePause}
+                disabled={!started || !alive}
+                className="px-10 py-3 rounded-xl border border-white/10 text-white text-[13px] font-black flex items-center gap-3 hover:bg-white/5 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {paused ? "Resume" : "Pause"}
+              </button>
+            )}
             <button
               onClick={() => {
                 if (mode === "Solo") reset();
@@ -1004,7 +1059,9 @@ export default function SnakeScreen() {
           )}
 
           <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">
-            Use arrow keys or WASD to move
+            {mode === "1v1"
+              ? "Use arrow keys or WASD to move"
+              : "Use arrow keys or WASD to move. Space or P to pause"}
           </span>
 
           {/* Rules Section */}

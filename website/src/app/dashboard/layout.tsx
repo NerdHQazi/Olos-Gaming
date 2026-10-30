@@ -15,6 +15,7 @@ import {
   X,
   Club,
   LogOut,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -61,6 +62,11 @@ const navigation = [
     href: "/dashboard/tournaments",
     icon: Trophy,
     color: "gold",
+  },
+  {
+    label: "Replays",
+    href: "/dashboard/replay",
+    icon: History,
   },
   {
     label: "NFTs",
