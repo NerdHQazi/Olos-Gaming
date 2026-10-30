@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { Color, Piece } from "chess.js";
 import { useAuth } from "@/context/AuthContext";
-import ChessBoard from "@/components/chess/ChessBoard";
+import ChessBoard from "@/components/chess/ChessBoardWood";
 import { useChessGame } from "@/lib/chess/useChessGame";
 import { GLYPHS, LEVELS, PIECE_VALUES, type Difficulty } from "@/lib/chess/constants";
 
