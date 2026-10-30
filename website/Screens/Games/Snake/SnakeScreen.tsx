@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -16,41 +15,167 @@ const H = ROWS * CELL;
 type Dir = "UP" | "DOWN" | "LEFT" | "RIGHT";
 type Pos = { x: number; y: number };
 
+const DIR_VEC: Record<Dir, Pos> = {
+  UP: { x: 0, y: -1 },
+  DOWN: { x: 0, y: 1 },
+  LEFT: { x: -1, y: 0 },
+  RIGHT: { x: 1, y: 0 },
+};
+
 function rnd(max: number) {
   return Math.floor(Math.random() * max);
 }
 
-// Function to draw a star
-function drawStar(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  spikes: number,
-  outerRadius: number,
-  innerRadius: number,
-) {
-  let rot = (Math.PI / 2) * 3;
-  let x = cx;
-  let y = cy;
-  let step = Math.PI / spikes;
+/* ------------------------------------------------------------------ */
+/*  DRAWING HELPERS - this is where the new look lives                 */
+/* ------------------------------------------------------------------ */
 
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - outerRadius);
-  for (let i = 0; i < spikes; i++) {
-    x = cx + Math.cos(rot) * outerRadius;
-    y = cy + Math.sin(rot) * outerRadius;
-    ctx.lineTo(x, y);
-    rot += step;
+// Fixed little background sparkles (deterministic so they never jump around)
+const SPARKLES = Array.from({ length: 45 }, (_, i) => ({
+  x: (i * 97 + 13) % W,
+  y: (i * 193 + 71) % H,
+  r: 0.6 + (i % 3) * 0.4,
+  a: 0.15 + (i % 5) * 0.07,
+}));
 
-    x = cx + Math.cos(rot) * innerRadius;
-    y = cy + Math.sin(rot) * innerRadius;
-    ctx.lineTo(x, y);
-    rot += step;
+// 1. Dark board with a faint purple grid
+function drawBoard(ctx: CanvasRenderingContext2D) {
+  const bg = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, W * 0.75);
+  bg.addColorStop(0, "#0b1226");
+  bg.addColorStop(1, "#03050b");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = "rgba(113,53,219,0.16)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= COLS; x++) {
+    ctx.beginPath();
+    ctx.moveTo(x * CELL + 0.5, 0);
+    ctx.lineTo(x * CELL + 0.5, H);
+    ctx.stroke();
   }
-  ctx.lineTo(cx, cy - outerRadius);
-  ctx.closePath();
-  ctx.fill();
+  for (let y = 0; y <= ROWS; y++) {
+    ctx.beginPath();
+    ctx.moveTo(0, y * CELL + 0.5);
+    ctx.lineTo(W, y * CELL + 0.5);
+    ctx.stroke();
+  }
+
+  for (const s of SPARKLES) {
+    ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
+
+// 2. Food: a glowing gold coin that gently pulses
+function drawCoin(ctx: CanvasRenderingContext2D, cell: Pos, time: number) {
+  const cx = cell.x * CELL + CELL / 2;
+  const cy = cell.y * CELL + CELL / 2;
+  const r = (CELL / 2 - 3) * (1 + Math.sin(time / 250) * 0.08);
+
+  ctx.save();
+  ctx.shadowColor = "#ffb020";
+  ctx.shadowBlur = 16;
+  const g = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, r);
+  g.addColorStop(0, "#fff3b0");
+  g.addColorStop(0.5, "#ffc233");
+  g.addColorStop(1, "#d97706");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "#b45309";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.62, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 3. Snake: one glowing ball per grid cell, drawn tail -> head so the head ends up on top
+function drawSnake(
+  ctx: CanvasRenderingContext2D,
+  snake: Pos[],
+  dir: Dir,
+  alive: boolean,
+  time: number,
+) {
+  const n = snake.length;
+  ctx.save();
+  ctx.globalAlpha = alive ? 1 : 0.45;
+
+  for (let i = n - 1; i >= 0; i--) {
+    const cx = snake[i].x * CELL + CELL / 2;
+    const cy = snake[i].y * CELL + CELL / 2;
+    const isHead = i === 0;
+
+    // body gets slightly thinner toward the tail
+    const taper = n > 1 ? 1 - (i / n) * 0.35 : 1;
+    const r = isHead ? CELL * 0.5 : CELL * 0.42 * taper;
+
+    // alternate two greens so the body looks segmented
+    const light = i % 2 === 0 ? "#9dff5a" : "#6fe63a";
+    const dark = i % 2 === 0 ? "#2a9d12" : "#237f10";
+
+    ctx.shadowColor = "rgba(80,255,60,0.55)";
+    ctx.shadowBlur = isHead ? 16 : 10;
+
+    const g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+    g.addColorStop(0, light);
+    g.addColorStop(1, dark);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Head details: tongue + eyes, rotated to face the direction of travel
+  const head = snake[0];
+  const hx = head.x * CELL + CELL / 2;
+  const hy = head.y * CELL + CELL / 2;
+  const f = DIR_VEC[dir]; // forward
+  const p = { x: -f.y, y: f.x }; // sideways
+
+  ctx.shadowBlur = 0;
+
+  // tongue flicks in and out
+  if (alive && Math.sin(time / 180) > 0) {
+    const tx = hx + f.x * CELL * 0.5;
+    const ty = hy + f.y * CELL * 0.5;
+    ctx.strokeStyle = "#ff3b5c";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx + f.x * 6, ty + f.y * 6);
+    ctx.moveTo(tx + f.x * 6, ty + f.y * 6);
+    ctx.lineTo(tx + f.x * 9 + p.x * 3, ty + f.y * 9 + p.y * 3);
+    ctx.moveTo(tx + f.x * 6, ty + f.y * 6);
+    ctx.lineTo(tx + f.x * 9 - p.x * 3, ty + f.y * 9 - p.y * 3);
+    ctx.stroke();
+  }
+
+  for (const side of [-1, 1]) {
+    const ex = hx + f.x * 3 + p.x * 5 * side;
+    const ey = hy + f.y * 3 + p.y * 5 * side;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(ex, ey, 3.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#0b0b14";
+    ctx.beginPath();
+    ctx.arc(ex + f.x * 1.2, ey + f.y * 1.2, 1.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/* ------------------------------------------------------------------ */
 
 export default function SnakeScreen() {
   const { user } = useAuth();
@@ -138,7 +263,7 @@ export default function SnakeScreen() {
           },
           (payload) => {
             const s = stateRef.current;
-            const amP1 = payload.new.player1_id === user?.id; // Assuming user is available
+            const amP1 = payload.new.player1_id === user?.id;
 
             s.food = payload.new.current_apple_pos;
             s.score = amP1
@@ -205,7 +330,6 @@ export default function SnakeScreen() {
             }
             if (payload.new.event_type === "rematch_accepted") {
               setRematchStatus("accepted");
-              // Match reset handled by match table update listener
             }
             if (payload.new.event_type === "rematch_declined") {
               setRematchStatus("none");
@@ -252,91 +376,21 @@ export default function SnakeScreen() {
     setStarted(true);
   }, [randomFood, mode]);
 
+  // Draws one frame. Called ~60 times a second by the animation loop below.
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
     const s = stateRef.current;
+    const time = performance.now();
 
-    // BG - Bright Blue
-    ctx.fillStyle = "#1E90FF";
-    ctx.fillRect(0, 0, W, H);
-
-    // Grid - Subtle
-    ctx.strokeStyle = "rgba(255,255,255,0.05)";
-    ctx.lineWidth = 1;
-    for (let x = 0; x <= COLS; x++) {
-      ctx.beginPath();
-      ctx.moveTo(x * CELL, 0);
-      ctx.lineTo(x * CELL, H);
-      ctx.stroke();
-    }
-    for (let y = 0; y <= ROWS; y++) {
-      ctx.beginPath();
-      ctx.moveTo(0, y * CELL);
-      ctx.lineTo(W, y * CELL);
-      ctx.stroke();
-    }
-
-    // Snake - Smooth Black Line
-    if (s.snake.length > 0) {
-      ctx.fillStyle = "#000000";
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = CELL - 8;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      // Draw head as a circle so it's visible even with length 1
-      const head = s.snake[0];
-      ctx.beginPath();
-      ctx.arc(
-        head.x * CELL + CELL / 2,
-        head.y * CELL + CELL / 2,
-        (CELL - 8) / 2,
-        0,
-        Math.PI * 2,
-      );
-      ctx.fill();
-
-      // Draw the rest of the body as a line
-      if (s.snake.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(head.x * CELL + CELL / 2, head.y * CELL + CELL / 2);
-        for (let i = 1; i < s.snake.length; i++) {
-          const seg = s.snake[i];
-          ctx.lineTo(seg.x * CELL + CELL / 2, seg.y * CELL + CELL / 2);
-        }
-        ctx.stroke();
-      }
-
-      // Tail fading (optional but design shows a taper)
-      if (s.snake.length > 3) {
-        ctx.lineWidth = 2; // thin end
-        ctx.beginPath();
-        const last = s.snake[s.snake.length - 1];
-        const secondLast = s.snake[s.snake.length - 2];
-        ctx.moveTo(
-          secondLast.x * CELL + CELL / 2,
-          secondLast.y * CELL + CELL / 2,
-        );
-        ctx.lineTo(last.x * CELL + CELL / 2, last.y * CELL + CELL / 2);
-        ctx.stroke();
-      }
-    }
-
-    // Food - Stars
-    const fx = s.food.x * CELL + CELL / 2;
-    const fy = s.food.y * CELL + CELL / 2;
-    ctx.fillStyle = "#FF4500"; // Red-Orange star
-    drawStar(ctx, fx, fy, 5, CELL / 2 - 4, CELL / 4 - 2);
-
-    // Add another star (yellow/orange) if it's 1v1 or just for aesthetic
-    // Design shows two small red stars and one orange star
-    // For now let's just draw the current food as a star
+    drawBoard(ctx);
+    drawCoin(ctx, s.food, time);
+    drawSnake(ctx, s.snake, s.dir, s.alive, time);
 
     // Game Over overlay
     if (!s.alive && s.started) {
-      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
       ctx.fillRect(0, 0, W, H);
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
@@ -346,8 +400,16 @@ export default function SnakeScreen() {
 
     // Start screen
     if (!s.started) {
-      ctx.fillStyle = "rgba(0,0,0,0.3)";
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
       ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 18px Outfit, sans-serif";
+      ctx.fillText(
+        mode === "1v1" ? "Get ready..." : "Press Space or click to start",
+        W / 2,
+        H / 2,
+      );
     }
   }, [mode]);
 
@@ -382,7 +444,6 @@ export default function SnakeScreen() {
     if (hitWall || hitSelf) {
       s.alive = false;
       setAlive(false);
-      draw();
 
       if (mode === "1v1" && matchStatus === "active") {
         // Start 5s respawn countdown
@@ -429,12 +490,18 @@ export default function SnakeScreen() {
         }
       }
     }
+  }, [randomFood, mode, matchId, matchStatus, user]);
 
-    draw();
-  }, [draw, randomFood, mode, matchId, matchStatus]);
-
+  // Animation loop: redraws every frame so the coin pulses and the tongue flicks.
+  // (The game logic still only moves on the slower setInterval tick below.)
   useEffect(() => {
-    draw();
+    let raf = 0;
+    const loop = () => {
+      draw();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, [draw]);
 
   useEffect(() => {
@@ -464,7 +531,6 @@ export default function SnakeScreen() {
     const onKey = (e: KeyboardEvent) => {
       const s = stateRef.current;
 
-      // Control mappings
       const map: Record<string, Dir> = {
         ArrowUp: "UP",
         KeyW: "UP",
@@ -511,12 +577,10 @@ export default function SnakeScreen() {
       };
 
       if (opp[d] !== s.dir) {
-        console.log(`[Snake] Direction changed to: ${d}`);
         s.nextDir = d;
       }
     };
 
-    console.log("[Snake] Registering keyboard listener");
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [reset]);
@@ -573,14 +637,13 @@ export default function SnakeScreen() {
 
   return (
     <div className="min-h-screen bg-[#05080F] text-white font-outfit">
-      {/* <Navbar /> */}
-
       <div className="flex flex-col items-center pt-24 pb-16 px-4">
         {/* Sub-header Bar */}
         <div className="w-full max-w-[1200px] flex items-center justify-between py-4 border-y border-white/5 mb-8">
           <div className="flex items-center gap-6">
             <Link
-              href="/dashboard/games"
+              href="/dashboard/games/snake/details"
+              aria-label="Back to game details"
               className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-all"
             >
               <svg
@@ -598,10 +661,10 @@ export default function SnakeScreen() {
             </Link>
             <div className="flex flex-col">
               <h1 className="text-xl font-black text-white leading-none">
-                Snake
+                Snake <span className="text-amber-500">Battle</span>
               </h1>
               <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">
-                1v1 Mode
+                {mode === "1v1" ? "1v1 Mode" : "Practice Mode"}
               </span>
             </div>
           </div>
@@ -656,18 +719,17 @@ export default function SnakeScreen() {
 
         {/* Canvas Area */}
         <div className="relative group">
-          <div className="absolute -inset-4 bg-olos-blue/5 rounded-[40px] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-          <div className="relative p-1 bg-gradient-to-b from-white/10 to-transparent rounded-[32px] overflow-hidden shadow-2xl shadow-black/50">
+          <div className="absolute -inset-4 bg-[#7135DB]/10 rounded-[40px] blur-3xl opacity-60 group-hover:opacity-100 transition-opacity duration-1000" />
+          <div className="relative p-1 bg-gradient-to-b from-[#7135DB]/60 to-transparent rounded-[32px] overflow-hidden shadow-2xl shadow-black/50">
             <canvas
               ref={canvasRef}
               width={W}
               height={H}
-              className="block rounded-[28px]"
+              className="block rounded-[28px] max-w-full h-auto"
               onClick={() => {
                 const s = stateRef.current;
                 if (!s.started || !s.alive) reset();
               }}
-              style={{ imageRendering: "pixelated" }}
             />
 
             {/* Death / Respawn Overlay */}
@@ -942,7 +1004,7 @@ export default function SnakeScreen() {
           )}
 
           <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">
-            Use arrow keys to move. Space to pause
+            Use arrow keys or WASD to move
           </span>
 
           {/* Rules Section */}
@@ -962,8 +1024,8 @@ export default function SnakeScreen() {
                     How to Play
                   </h4>
                   <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                    Control the snake using Arrow keys or WASD. Eat the red
-                    stars to grow and increase your score.
+                    Control the snake using Arrow keys or WASD. Eat the golden
+                    coins to grow and increase your score.
                   </p>
                 </div>
               </div>
@@ -976,8 +1038,8 @@ export default function SnakeScreen() {
                   </h4>
                   <p className="text-xs text-gray-400 leading-relaxed font-medium">
                     In 1v1 mode, you compete for the highest score within the
-                    time limit. If you hit a wall or yourself, the game ends for
-                    you.
+                    time limit. If you hit a wall or yourself, you respawn after
+                    5 seconds.
                   </p>
                 </div>
               </div>
